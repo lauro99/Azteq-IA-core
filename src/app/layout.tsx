@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import { Chakra_Petch } from "next/font/google";
+import { LanguageProvider } from "@/components/LanguageContext";
 import "./globals.css";
 
 const aztecFont = Chakra_Petch({
@@ -23,7 +24,9 @@ export default function RootLayout({
       lang="es"
       className={`${aztecFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

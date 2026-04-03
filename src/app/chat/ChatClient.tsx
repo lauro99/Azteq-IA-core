@@ -1,8 +1,10 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function ChatClient() {
+  const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function ChatClient() {
         setMessages((prev) => [...prev, { role: 'ai', content: '⚠ Error: ' + data.error }]);
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { role: 'ai', content: '⚠ Fallo al conectar con la API de chat.' }]);
+      setMessages((prev) => [...prev, { role: 'ai', content: t.errorCon }]);
     }
 
     setLoading(false);
@@ -42,18 +44,18 @@ export default function ChatClient() {
         
         {/* Etiqueta Superior */}
         <div className="absolute left-1/2 -top-[21px] -translate-x-1/2 bg-[#121927] border-[1.5px] border-[#E8C673] px-7 py-2 rounded-md shadow-[0_4px_10px_rgba(0,0,0,0.4)] z-20 flex items-center justify-center min-w-[240px]">
-          <span className="text-[#E8C673] text-[18px] mr-2">⚙</span> 
-          <span className="text-[#E8C673] font-bold text-[17px] tracking-wide">Azteq-IA Experto</span>
+          <span className="text-[#E8C673] text-[18px] mr-2">⚙</span>
+          <span className="text-[#E8C673] font-bold text-[17px] tracking-wide">{t.expertBadge}</span>
         </div>
 
         {/* Zona de Mensajes */}
         <div className="flex-1 overflow-y-auto px-6 md:px-12 pt-[70px] pb-6 min-h-[200px] max-h-[30vh] md:max-h-[350px] text-[#312011] flex flex-col font-serif">
-          
+
           {messages.length === 0 ? (
             <div className="text-center w-full mx-auto my-auto flex flex-col items-center justify-center">
-              <h2 className="font-bold text-[28px] mb-3 text-[#312011] tracking-tight">¡Hola! Soy tu IA de Superinteligencia</h2>
+              <h2 className="font-bold text-[28px] mb-3 text-[#312011] tracking-tight">{t.hello}</h2>
               <p className="text-[#4B3B2B] leading-relaxed text-[16px] max-w-xl mx-auto font-medium">
-                Pregúntame sobre los manuales técnicos guardados en nuestra base de datos. Si no encuentro la información exacta, usaré mi conocimiento general para ayudarte.
+                {t.helloDesc}
               </p>
             </div>
           ) : (
@@ -76,7 +78,7 @@ export default function ChatClient() {
                       <div className="w-2 h-2 bg-[#9B8161] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <div className="w-2 h-2 bg-[#9B8161] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                     </span>
-                    <span className="font-medium">Pensando...</span>
+                    <span className="font-medium">{t.thinking}</span>
                   </div>
                 </div>
               )}
@@ -89,7 +91,7 @@ export default function ChatClient() {
           <input
             type="text"
             className="flex-1 bg-[#FCFAEA] border-2 border-[#BEA27B] text-[#312011] placeholder-[#87705B] rounded-[24px] px-6 py-[14px] focus:outline-none focus:ring-1 focus:ring-[#8B6E4A] transition-all font-sans text-[15px] md:text-[16px] shadow-inner font-medium"
-            placeholder="Pregunta algo técnico (Ej: ¿A qué temperatura se calibra la XYZ-120?)..."
+            placeholder={t.placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -98,9 +100,9 @@ export default function ChatClient() {
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="bg-[#A3855B] text-white font-bold tracking-wider px-8 md:px-10 py-[14px] rounded-[24px] shadow-md uppercase hover:bg-[#8B6E4A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px]"
+            className="bg-[#A3855B] text-white font-bold tracking-wider px-8 md:px-10 py-[14px] rounded-[24px] shadow-md uppercase hover:bg-[#8B6E4A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px]"  
           >
-            Enviar
+            {t.send}
           </button>
         </div>
 

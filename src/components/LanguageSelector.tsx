@@ -1,9 +1,8 @@
 ﻿'use client';
-
-import { useState } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function LanguageSelector() {
-  const [lang, setLang] = useState('ES');
+  const { lang, setLang } = useLanguage();
 
   return (
     <div className="pointer-events-auto bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl flex items-center p-1 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
