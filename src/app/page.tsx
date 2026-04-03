@@ -225,13 +225,20 @@ export default function Home() {
                   setExpandedCard('plant');
                   return;
                 }
+                if (user) {
+                  router.push('/planta');
+                } else {
+                  document.getElementById('operatorIdInput')?.focus();
+                  setErrorMsg('Inicia sesión para acceder a la IA');
+                  setExpandedCard('none');
+                }
               }}
-              className={`rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed transition-all duration-500 cursor-pointer overflow-hidden relative shrink-0 
+              className={`group rounded-3xl bg-black/40 backdrop-blur-md border ${user ? 'border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.2)]' : 'border-white/10'} hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:border-[#D4AF37]/50 transition-all duration-500 cursor-pointer overflow-hidden relative shrink-0 
                 ${expandedCard === 'plant' 
-                  ? 'flex flex-col items-center text-center w-full max-w-[320px] rounded-3xl p-6 h-auto opacity-100 grayscale-0' 
+                  ? 'flex flex-col items-center text-center w-full max-w-[320px] rounded-3xl p-6 h-auto opacity-100' 
                   : expandedCard === 'expert' 
                     ? 'hidden' 
-                    : 'flex flex-col items-center justify-center w-16 h-16 rounded-full p-0 opacity-80 backdrop-blur-md grayscale'}`}
+                    : 'flex flex-col items-center justify-center w-16 h-16 rounded-full p-0 shadow-[0_0_20px_rgba(212,175,55,0.3)] animate-pulse'}`}
             >
               <button 
                 className={`absolute top-4 left-4 w-8 h-8 items-center justify-center rounded-full bg-white/10 text-white/70 hover:text-white transition-colors z-20 ${expandedCard === 'plant' ? 'flex' : 'hidden'}`}
@@ -244,12 +251,14 @@ export default function Home() {
               </button>
 
               <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'plant' ? 'opacity-100' : 'opacity-0'}`}>
-                <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{t.comingSoon}</span>
+                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                </span>
               </div>
 
               <div className={`text-[#D4AF37] transition-all duration-500 flex items-center justify-center 
-                ${expandedCard === 'plant' ? 'w-12 h-12 bg-white/5 border border-white/10 rounded-2xl mb-4' : 'w-full h-full bg-transparent'}`}>
-                <svg className={`drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] ${expandedCard === 'plant' ? 'w-7 h-7' : 'w-8 h-8'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${expandedCard === 'plant' ? 'w-12 h-12 bg-white/5 border border-white/10 rounded-2xl mb-4' : 'w-full h-full bg-transparent'} group-hover:scale-110 group-hover:bg-[#D4AF37]/20`}>
+                <svg className={`drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] ${expandedCard === 'plant' ? 'w-7 h-7' : 'w-8 h-8'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
@@ -259,9 +268,11 @@ export default function Home() {
               </div>
 
               <div className={`flex flex-col items-center flex-1 transition-opacity duration-300 w-full ${expandedCard === 'plant' ? 'opacity-100 delay-100 block' : 'opacity-0 hidden'}`}>
-                <h3 className="text-lg font-bold text-white/80 mb-2 tracking-wide">{t.iaPlant}</h3>
-                <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-                <div className="text-white/30 font-semibold text-xs flex items-center justify-center gap-2">{t.inDevelopment}</div>
+                <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
+                <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
+                <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto">
+                  {user ? 'Entrar a Control →' : 'Inicia sesión \u2191'}
+                </div>
               </div>
             </div>
           </div>
@@ -298,12 +309,24 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed p-6 flex flex-col items-center text-center h-full relative overflow-hidden opacity-60 grayscale hover:grayscale-0 transition-all w-[320px] shrink-0">
+            <div 
+              onClick={() => {
+                if (user) {
+                  router.push('/planta');
+                } else {
+                  document.getElementById('operatorIdInput')?.focus();
+                  setErrorMsg('Inicia sesión para acceder a la IA');
+                }
+              }}
+              className={`group rounded-3xl bg-black/40 backdrop-blur-sm border ${user ? 'border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.2)]' : 'border-white/10'} p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:border-[#D4AF37]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-[320px] shrink-0`}
+            >
               <div className="absolute top-0 right-0 p-3">
-                <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{t.comingSoon}</span>
+                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                </span>
               </div>
-              <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4">
-                <svg className="w-7 h-7 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#D4AF37]/20 transition-all">
+                <svg className="w-7 h-7 drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
@@ -311,9 +334,11 @@ export default function Home() {
                   <rect x="10" y="10" width="4" height="3" className="fill-white/10" strokeWidth="1.5" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-white/80 mb-2 tracking-wide">{t.iaPlant}</h3>
-              <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-              <div className="text-white/30 font-semibold text-xs flex items-center gap-2">{t.inDevelopment}</div>
+              <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
+              <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
+              <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
+                {user ? 'Entrar a Control →' : 'Inicia sesión arriba \u2191'}
+              </div>
             </div>
           </div>
         </main>
