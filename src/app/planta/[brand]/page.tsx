@@ -483,8 +483,15 @@ export default function PlcDashboard() {
                 </h3>
                 <div className="text-[#4B3B2B] text-xs font-medium space-y-3 leading-relaxed">
                   <p><strong className="text-[#312011]">Templo Reliquia:</strong> La ofrenda (equipo Azteq-IA) se hace en el mismo suelo sagrado (LAN) que el {brandInfo.name}.</p>
-                  <p><strong className="text-[#312011]">Cielo Puro:</strong> La comunicación viaja por los vientos a través de un túnel místico (VPN) que proveen los guardianes de red.</p>
+                  <p><strong className="text-[#312011]">Cielo Puro:</strong> La comunicación viaja por los vientos a través de un túnel místico (VPN) que prroveen los guardianes de red.</p>
                 </div>
+                <button
+                  onClick={() => router.push('/planta/ayuda')}
+                  className="mt-4 text-[#A3855B] text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1 transition-colors hover:text-[#69523C]"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Leer más: Guía completa de conexión paso a paso &rarr;
+                </button>
               </div>
             )}
 
