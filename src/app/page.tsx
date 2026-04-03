@@ -1,5 +1,4 @@
 ﻿import Link from 'next/link';
-import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -9,13 +8,39 @@ export default function Home() {
       {/* Overlay oscuro para que el texto sea legible */}
       <div className="absolute inset-0 bg-black/60 pointer-events-none z-0"></div>
 
-      <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-4 flex flex-col">
+      {/* Top Bar - Login */}
+      <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex justify-end items-start pointer-events-none">
+        {/* Caja de Login estilo cristal */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex flex-col gap-3 pointer-events-auto w-full sm:w-auto max-w-[400px]">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488] animate-pulse"></div>
+            <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Control de Acceso</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input 
+              type="text" 
+              placeholder="ID Operador..." 
+              className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1"
+            />
+            <input 
+              type="password" 
+              placeholder="Código de acceso..." 
+              className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1"
+            />
+            <button className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-6 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
+              Entrar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-6 md:px-12 flex flex-col">
         {/* Contenido Principal */}
-        <main className="max-w-6xl w-full mx-auto flex-1 flex flex-col justify-end">
+        <main className="w-full flex-1 flex flex-col justify-end">
 
           {/* Tarjetas de Módulos */}
-          {/* Se usa flex con justify-between para mandarlas a las orillas */}
-          <div className="flex flex-col md:flex-row items-end justify-between gap-4 pb-2 w-full">  
+          {/* Se usa flex con justify-between para mandarlas a las orillas */}  
+          <div className="flex flex-col md:flex-row items-end justify-between gap-4 pb-2 w-full">
 
             {/* Módulo 1: Chat Experto (Listo) */}
             <Link href="/chat" className="group rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all cursor-pointer flex flex-col items-start h-full relative overflow-hidden w-full md:w-[320px] shrink-0">
@@ -26,8 +51,8 @@ export default function Home() {
                 🤖
               </div>
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">IA Experta (Manuales)</h3>
-              <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">   
-                Asistente de Superinteligencia basado en los manuales oficiales de tu empresa. Resuelve dudas operativas en base a conocimiento guardado.
+              <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">
+                Asistente de Superinteligencia basado en los manuales oficiales de tu empresa. Resuelve dudas operativas en base a conocimiento guardado.       
               </p>
               <div className="text-[#0D9488] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
                 Abrir Chat <span aria-hidden="true">&rarr;</span>
@@ -43,8 +68,8 @@ export default function Home() {
                 🏭
               </div>
               <h3 className="text-lg font-bold text-white/80 mb-2 tracking-wide">IA Planta (Conexión PLC)</h3>
-              <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">   
-                Monitoreo analítico predictivo en tiempo real conectado a sensores. Detecta posibles fallas y anomalías en las máquinas de forma autónoma.        
+              <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">
+                Monitoreo analítico predictivo en tiempo real conectado a sensores. Detecta posibles fallas y anomalías en las máquinas de forma autónoma.      
               </p>
               <div className="text-white/30 font-semibold text-xs flex items-center gap-2">
                 En desarrollo...
@@ -55,8 +80,8 @@ export default function Home() {
         </main>
 
         {/* Footer */}
-        <footer className="max-w-6xl w-full mx-auto mt-4 pt-4 border-t border-white/10 text-center text-xs text-white/40 tracking-widest uppercase">
-          <p>&copy; 2026 Azteq-IA. Sistema Operacional de Nueva Generación.</p>   
+        <footer className="w-full mt-4 pt-4 border-t border-white/10 text-center text-xs text-white/40 tracking-widest uppercase">
+          <p>&copy; 2026 Azteq-IA. Sistema Operacional de Nueva Generación.</p> 
         </footer>
       </div>
     </div>
