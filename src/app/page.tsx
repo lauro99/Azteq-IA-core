@@ -15,6 +15,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<'none' | 'expert' | 'plant'>('none');
 
   const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
 
@@ -150,8 +151,123 @@ export default function Home() {
         </div>
       </div>
       <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-6 md:px-12 flex flex-col">
-        <main className="w-full flex-1 flex flex-col justify-end">
-          <div className="flex flex-col md:flex-row items-end justify-between gap-6 pb-2 w-full">
+        <main 
+          className="w-full flex-1 flex flex-col justify-end"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setExpandedCard('none');
+          }}
+        >
+          {/* VERSION MOVIL: Burbujas flotantes */}
+          <div className={`md:hidden flex ${expandedCard !== 'none' ? 'flex-col items-center' : 'flex-row items-end justify-between'} gap-6 pb-2 w-full transition-all duration-500`}>
+            
+            {/* IA EXPERTA - MÓVIL */}
+            <div 
+              onClick={(e) => {
+                if (expandedCard !== 'expert') {
+                  e.preventDefault();
+                  setExpandedCard('expert');
+                  return;
+                }
+                if (user) {
+                  router.push('/chat');
+                } else {
+                  document.getElementById('operatorIdInput')?.focus();
+                  setErrorMsg('Inicia sesión para acceder a la IA');
+                  setExpandedCard('none');
+                }
+              }}
+              className={`group bg-black/40 backdrop-blur-md border ${user ? 'border-[#0D9488]/50 shadow-[0_0_25px_rgba(13,148,136,0.2)]' : 'border-white/10'} hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all duration-500 cursor-pointer overflow-hidden relative shrink-0 
+                ${expandedCard === 'expert' 
+                  ? 'flex flex-col items-center text-center w-full max-w-[320px] rounded-3xl p-6 h-auto' 
+                  : expandedCard === 'plant' 
+                    ? 'hidden' 
+                    : 'flex flex-col items-center justify-center w-16 h-16 rounded-full p-0 shadow-[0_0_20px_rgba(13,148,136,0.3)] animate-pulse'}`}
+            >
+              <button 
+                className={`absolute top-4 left-4 w-8 h-8 items-center justify-center rounded-full bg-white/10 text-white/70 hover:text-white transition-colors z-20 ${expandedCard === 'expert' ? 'flex' : 'hidden'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedCard('none');
+                }}
+              >
+                ✕
+              </button>
+
+              <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'expert' ? 'opacity-100' : 'opacity-0'}`}>
+                <span className={`${user ? 'bg-[#0D9488]/50' : 'bg-[#0D9488]/20'} border border-[#0D9488]/50 text-[#E0F2F1] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                </span>
+              </div>
+              
+              <div className={`text-[#0D9488] transition-all duration-500 flex items-center justify-center 
+                ${expandedCard === 'expert' ? 'w-12 h-12 bg-white/5 border border-white/10 rounded-2xl mb-4' : 'w-full h-full bg-transparent'}`}>
+                <svg className={`drop-shadow-[0_0_8px_rgba(13,148,136,0.6)] ${expandedCard === 'expert' ? 'w-7 h-7' : 'w-8 h-8'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2L3 12l9 10 9-10L12 2z" />
+                  <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6v3m0 6v3m-6-6h3m6 0h3" />
+                </svg>
+              </div>
+
+              <div className={`flex flex-col items-center flex-1 transition-opacity duration-300 w-full ${expandedCard === 'expert' ? 'opacity-100 delay-100 block' : 'opacity-0 hidden'}`}>
+                <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaExpert}</h3>
+                <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaExpertDesc}</p>
+                <div className="text-[#0D9488] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto">
+                  {user ? 'Entrar al Chat →' : 'Inicia sesión \u2191'}
+                </div>
+              </div>
+            </div>
+
+            {/* IA PLANTA - MÓVIL */}
+            <div 
+              onClick={(e) => {
+                if (expandedCard !== 'plant') {
+                  e.preventDefault();
+                  setExpandedCard('plant');
+                  return;
+                }
+              }}
+              className={`rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed transition-all duration-500 cursor-pointer overflow-hidden relative shrink-0 
+                ${expandedCard === 'plant' 
+                  ? 'flex flex-col items-center text-center w-full max-w-[320px] rounded-3xl p-6 h-auto opacity-100 grayscale-0' 
+                  : expandedCard === 'expert' 
+                    ? 'hidden' 
+                    : 'flex flex-col items-center justify-center w-16 h-16 rounded-full p-0 opacity-80 backdrop-blur-md grayscale'}`}
+            >
+              <button 
+                className={`absolute top-4 left-4 w-8 h-8 items-center justify-center rounded-full bg-white/10 text-white/70 hover:text-white transition-colors z-20 ${expandedCard === 'plant' ? 'flex' : 'hidden'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpandedCard('none');
+                }}
+              >
+                ✕
+              </button>
+
+              <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'plant' ? 'opacity-100' : 'opacity-0'}`}>
+                <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{t.comingSoon}</span>
+              </div>
+
+              <div className={`text-[#D4AF37] transition-all duration-500 flex items-center justify-center 
+                ${expandedCard === 'plant' ? 'w-12 h-12 bg-white/5 border border-white/10 rounded-2xl mb-4' : 'w-full h-full bg-transparent'}`}>
+                <svg className={`drop-shadow-[0_0_8px_rgba(212,175,55,0.4)] ${expandedCard === 'plant' ? 'w-7 h-7' : 'w-8 h-8'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v5m-4-4v4m8-4v4" />
+                  <rect x="10" y="10" width="4" height="3" className="fill-white/10" strokeWidth="1.5" />
+                </svg>
+              </div>
+
+              <div className={`flex flex-col items-center flex-1 transition-opacity duration-300 w-full ${expandedCard === 'plant' ? 'opacity-100 delay-100 block' : 'opacity-0 hidden'}`}>
+                <h3 className="text-lg font-bold text-white/80 mb-2 tracking-wide">{t.iaPlant}</h3>
+                <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
+                <div className="text-white/30 font-semibold text-xs flex items-center justify-center gap-2">{t.inDevelopment}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* VERSION ESCRITORIO: Tarjetas Originales */}
+          <div className="hidden md:flex flex-row items-end justify-between gap-6 pb-2 w-full">
             <div 
               onClick={() => {
                 if (user) {
@@ -161,7 +277,7 @@ export default function Home() {
                   setErrorMsg('Inicia sesión para acceder a la IA');
                 }
               }}
-              className={`group rounded-3xl bg-black/40 backdrop-blur-md border ${user ? 'border-[#0D9488]/50 shadow-[0_0_25px_rgba(13,148,136,0.2)]' : 'border-white/10'} p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-full md:w-[320px] shrink-0`}
+              className={`group rounded-3xl bg-black/40 backdrop-blur-md border ${user ? 'border-[#0D9488]/50 shadow-[0_0_25px_rgba(13,148,136,0.2)]' : 'border-white/10'} p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-[320px] shrink-0`}
             >
               <div className="absolute top-0 right-0 p-3">
                 <span className={`${user ? 'bg-[#0D9488]/50' : 'bg-[#0D9488]/20'} border border-[#0D9488]/50 text-[#E0F2F1] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
@@ -181,7 +297,8 @@ export default function Home() {
                 {user ? 'Entrar al Chat →' : 'Inicia sesión arriba \u2191'}
               </div>
             </div>
-            <div className="rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed p-6 flex flex-col items-center text-center h-full relative overflow-hidden opacity-60 grayscale hover:grayscale-0 transition-all w-full md:w-[320px] shrink-0">
+            
+            <div className="rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed p-6 flex flex-col items-center text-center h-full relative overflow-hidden opacity-60 grayscale hover:grayscale-0 transition-all w-[320px] shrink-0">
               <div className="absolute top-0 right-0 p-3">
                 <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{t.comingSoon}</span>
               </div>
