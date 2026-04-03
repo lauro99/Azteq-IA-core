@@ -79,7 +79,7 @@ export default function ChatClient() {
               </p>
             </div>
           ) : (
-            <div className="w-full space-y-5 flex flex-col justify-end h-full mt-auto font-sans">
+            <div className="w-full space-y-5 flex flex-col mt-auto font-sans">
               {messages.map((msg, index) => (
                 <div key={index} className={"flex w-full " + (msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div

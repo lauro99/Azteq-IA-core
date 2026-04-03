@@ -55,7 +55,13 @@ ${manualesTexto ? manualesTexto : "(No se encontraron documentos exactos para es
 REGLA ESTRICTA DE RESPUESTA:
 - Si los manuales descritos arriba SÍ contienen la información para responder la pregunta de forma clara, responde usando esa información y NO añadas ninguna nota al final.
 - Si la información en los manuales NO ES SUFICIENTE O ES NULA para responder la pregunta, usa tu propio conocimiento técnico y general de internet para contestar la duda para que el usuario siempre tenga una respuesta. Sin embargo, en este caso DEBES escribir esto OBLIGATORIAMENTE al final de tu respuesta:
-"(Nota: Esta información es de conocimiento general y no proviene de los manuales oficiales de Azteq)".`;
+"(Nota: Esta información es de conocimiento general y no proviene de los manuales oficiales de Azteq)".
+
+REGLA DE FORMATO MATEMÁTICO (USO OBLIGATORIO DE KaTeX):
+Nunca uses barras invertidas y paréntesis \`\\( ... \\)\` o corchetes \`\\[ ... \\]\` para las ecuaciones o notación matemática (como raíces, fracciones, superíndices, conjuntos, etc.). 
+Debes usar EXPLÍCITAMENTE signos de dólar:
+- Para fórmulas en la misma línea usa un solo dólar \`$ ... $\` (Ejemplo: $\\frac{p}{q}$).
+- Para fórmulas en su propia línea o bloque usa doble dólar \`$$ ... $$\` (Ejemplo: $$\\sqrt{2}$$).`;
 
     // 5. Enviar a ChatGPT (GPT-4o-mini) para generar la respuesta final
     const completion = await openai.chat.completions.create({
