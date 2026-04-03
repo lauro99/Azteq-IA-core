@@ -1,15 +1,20 @@
 ﻿import Link from 'next/link';
+import LanguageSelector from '@/components/LanguageSelector';
 
 export default function Home() {
   return (
     <div className="min-h-screen w-full flex flex-col relative overflow-y-auto bg-[#111] bg-no-repeat bg-center"
          style={{ backgroundImage: 'url(/azteq-IA.png)', backgroundSize: '100% 100%', backgroundAttachment: 'fixed' }}>
-      
+
       {/* Overlay oscuro para que el texto sea legible */}
       <div className="absolute inset-0 bg-black/60 pointer-events-none z-0"></div>
 
-      {/* Top Bar - Login */}
-      <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex justify-end items-start pointer-events-none">
+      {/* Top Bar */}
+      <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex justify-between items-start pointer-events-none">
+        
+        {/* Selector de Idioma */}
+        <LanguageSelector />
+
         {/* Caja de Login estilo cristal */}
         <div className="bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex flex-col gap-3 pointer-events-auto w-full sm:w-auto max-w-[400px]">
           <div className="flex items-center gap-2 mb-1">
@@ -39,16 +44,22 @@ export default function Home() {
         <main className="w-full flex-1 flex flex-col justify-end">
 
           {/* Tarjetas de Módulos */}
-          {/* Se usa flex con justify-between para mandarlas a las orillas */}  
-          <div className="flex flex-col md:flex-row items-end justify-between gap-4 pb-2 w-full">
+          {/* Se usa flex con justify-center para centrarlas en la pantalla */}  
+          <div className="flex flex-col md:flex-row items-end justify-between gap-6 pb-2 w-full">
 
             {/* Módulo 1: Chat Experto (Listo) */}
-            <Link href="/chat" className="group rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all cursor-pointer flex flex-col items-start h-full relative overflow-hidden w-full md:w-[320px] shrink-0">
+            <Link href="/chat" className="group rounded-3xl bg-black/40 backdrop-blur-md border border-white/10 p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(13,148,136,0.4)] hover:border-[#0D9488]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-full md:w-[320px] shrink-0">
               <div className="absolute top-0 right-0 p-3">
                 <span className="bg-[#0D9488]/20 border border-[#0D9488]/50 text-[#E0F2F1] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Activo</span>
               </div>
-              <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#0D9488] rounded-2xl flex items-center justify-center text-xl mb-4 group-hover:scale-110 group-hover:bg-[#0D9488]/20 transition-all">
-                🤖
+              <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#0D9488] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#0D9488]/20 transition-all">
+                <svg className="w-7 h-7 drop-shadow-[0_0_8px_rgba(13,148,136,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Diamante / Pirámide dual azteca */}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2L3 12l9 10 9-10L12 2z" />
+                  {/* Ojo central o núcleo de IA */}
+                  <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6v3m0 6v3m-6-6h3m6 0h3" />
+                </svg>
               </div>
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">IA Experta (Manuales)</h3>
               <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">
@@ -60,12 +71,19 @@ export default function Home() {
             </Link>
 
             {/* Módulo 3: IA Planta (Próximamente) */}
-            <div className="rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed p-6 flex flex-col items-start h-full relative overflow-hidden opacity-60 grayscale hover:grayscale-0 transition-all w-full md:w-[320px] shrink-0">
+            <div className="rounded-3xl bg-black/20 backdrop-blur-sm border border-white/5 border-dashed p-6 flex flex-col items-center text-center h-full relative overflow-hidden opacity-60 grayscale hover:grayscale-0 transition-all w-full md:w-[320px] shrink-0">
               <div className="absolute top-0 right-0 p-3">
                 <span className="bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Próximamente</span>
               </div>
-              <div className="w-12 h-12 bg-white/5 border border-white/10 text-white/40 rounded-2xl flex items-center justify-center text-xl mb-4">
-                🏭
+              <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4">
+                <svg className="w-7 h-7 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Pirámide escalonada conectada */}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v5m-4-4v4m8-4v4" />
+                  <rect x="10" y="10" width="4" height="3" className="fill-white/10" strokeWidth="1.5" />
+                </svg>
               </div>
               <h3 className="text-lg font-bold text-white/80 mb-2 tracking-wide">IA Planta (Conexión PLC)</h3>
               <p className="text-white/50 mb-4 flex-1 text-xs leading-relaxed font-light">
