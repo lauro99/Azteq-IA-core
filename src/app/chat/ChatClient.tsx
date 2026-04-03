@@ -69,7 +69,7 @@ export default function ChatClient() {
         </div>
 
         {/* Zona de Mensajes */}
-        <div className="flex-1 overflow-y-auto px-5 md:px-10 pt-[50px] pb-6 min-h-[150px] max-h-[40vh] md:max-h-[300px] text-[#312011] flex flex-col font-serif relative z-10">
+        <div className="flex-1 overflow-y-auto px-5 md:px-10 pt-[50px] pb-6 min-h-[150px] max-h-[70vh] md:max-h-[65vh] text-[#312011] flex flex-col font-serif relative z-10">
 
           {messages.length === 0 ? (
             <div className="text-center w-full mx-auto my-auto flex flex-col items-center justify-center">
