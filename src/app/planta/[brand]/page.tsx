@@ -61,11 +61,13 @@ export default function PlcDashboard() {
       setRack(config.rack?.toString() || '0');
       setSlot(config.slot?.toString() || '1');
       setConnectionMode(config.is_cloud ? 'cloud' : 'local');
-      setNewPlcName(config.name); // Para que se sepa de qué máquina hablamos
+      setNewPlcName(config.name);
+        setIoTags(config.io_config || []);
     } else {
       setIpAddress('');
       setNewPlcName('');
-    }
+        setIoTags([]);
+      }
   };
 
   const handleSavePlc = async () => {
@@ -138,6 +140,41 @@ export default function PlcDashboard() {
     checkSession();
   }, [router, brandId]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/plc/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brand: brandId,
+              ip: ipAddress,
+              port,
+              rack: Number(rack),
+              slot: Number(slot),
+              isCloud: connectionMode === 'cloud',
+              mockMode,
+              ioTags
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setPlcData(data.data);
+          } else {
+            console.error('Polling error:', data.error);
+          }
+        } catch (error) {
+          console.error('Polling network error:', error);
+        }
+      }, 2000); // 2 segundos (refresco en tiempo real)
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#111] flex items-center justify-center">
@@ -161,7 +198,8 @@ export default function PlcDashboard() {
           rack: Number(rack),
           slot: Number(slot),
           isCloud: connectionMode === 'cloud',
-          mockMode
+          mockMode,
+          ioTags
         })
       });
       const data = await res.json();
@@ -340,8 +378,19 @@ export default function PlcDashboard() {
               </button>
               <button 
                 onClick={() => {
-                  alert('¡Configuración lista para persistir a Supabase próximamente!');
-                  setShowConfigurator(false);
+                  if (selectedPlcId) {
+                      setIsSaving(true);
+                      supabase.from('plcs').update({ io_config: ioTags }).eq('id', selectedPlcId).then(({ error }) => {
+                        setIsSaving(false);
+                        if (error) { alert('Error al guardar I/O: ' + error.message); return; }
+                        alert('¡Mapa I/O guardado en Supabase!');
+                        setSavedPLCs(prev => prev.map(p => p.id === selectedPlcId ? { ...p, io_config: ioTags } : p));
+                        setShowConfigurator(false);
+                      });
+                    } else {
+                      alert('Primero guarda el PLC (arriba) antes de mapear variables.');
+                      setShowConfigurator(false);
+                    }
                 }}
                 className="px-6 py-2.5 bg-[#E8C673] hover:bg-[#D4AF37] text-[#312011] font-bold tracking-[0.1em] uppercase text-sm transition-all"
                 style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
@@ -660,28 +709,50 @@ export default function PlcDashboard() {
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {/* Cuadro de Sensor 1 */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Temperatura CPU</span>
-                <span className="text-3xl font-black text-white">{plcData?.temperaturaCpu ?? '--'}<span className="text-lg text-white/40">°C</span></span>
-              </div>
-              {/* Cuadro de Sensor 2 */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Presión Sistema</span>
-                <span className="text-3xl font-black text-white">{plcData?.presionSistema ?? '--'}<span className="text-lg text-white/40">bar</span></span>
-              </div>
-              {/* Cuadro de Sensor 3 */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estatus General</span>
-                <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral === 'OPERATIVO' ? 'text-green-400' : 'text-red-400'}`}>
-                  {plcData?.estatusGeneral ?? '--'}
-                </span>
-              </div>
-              {/* Cuadro de Sensor 4 */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ciclos / Hora</span>
-                <span className="text-3xl font-black text-white">{plcData?.ciclosPorHora?.toLocaleString() ?? '--'}</span>
-              </div>
+              {ioTags.length > 0 ? (
+                <>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estado Conexión</span>
+                    <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral?.includes('OPERATIVO') ? 'text-green-400' : 'text-red-400'}`}>
+                      {plcData?.estatusGeneral ?? 'No Conectado'}
+                    </span>
+                  </div>
+                  {ioTags.map((tag) => (
+                    <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                      <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
+                      <span className="text-3xl font-black text-white">
+                        {plcData?.[tag.name] !== undefined ? plcData[tag.name] : '--'}
+                        {tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {/* Cuadro de Sensor 1 */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Temperatura CPU</span>
+                    <span className="text-3xl font-black text-white">{plcData?.temperaturaCpu ?? '--'}<span className="text-lg text-white/40">°C</span></span>     
+                  </div>
+                  {/* Cuadro de Sensor 2 */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Presión Sistema</span>
+                    <span className="text-3xl font-black text-white">{plcData?.presionSistema ?? '--'}<span className="text-lg text-white/40">bar</span></span>     
+                  </div>
+                  {/* Cuadro de Sensor 3 */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estatus General</span>
+                    <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral === 'OPERATIVO' ? 'text-green-400' : 'text-red-400'}`}>
+                      {plcData?.estatusGeneral ?? '--'}
+                    </span>
+                  </div>
+                  {/* Cuadro de Sensor 4 */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ciclos / Hora</span>
+                    <span className="text-3xl font-black text-white">{plcData?.ciclosPorHora?.toLocaleString() ?? '--'}</span>
+                  </div>
+                </>
+              )}
               {/* Mensaje Largo */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-2 hover:bg-white/10 transition-colors">
                 <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Alarma Predictiva</span>

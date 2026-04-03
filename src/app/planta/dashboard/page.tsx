@@ -6,7 +6,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 
 export default function PlantDashboard() {
   const router = useRouter();
-  const [liveData, setLiveData] = useState<Record<string, { temp: number, press: number, cycles: number }>>({});
+  const [liveData, setLiveData] = useState<Record<string, any>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userPLCs, setUserPLCs] = useState<any[]>([]); // Lista real traída de Supabase
@@ -42,39 +42,58 @@ export default function PlantDashboard() {
     fetchSessionAndData();
   }, [router]);
 
-  // Simulación de datos en tiempo real con fluctuaciones para las máquinas traídas
+  // Simulación de datos en tiempo real o fetch real para las máquinas traídas
   useEffect(() => {
     if (userPLCs.length === 0) return;
 
-    // Crear valores iniciales dinámicos para las máquinas reales consultadas en Supabase
-    const initialInfo: Record<string, { temp: number, press: number, cycles: number }> = {};
-    userPLCs.forEach(plc => {
-      initialInfo[plc.id] = { 
-        temp: 35 + (Math.random() * 40), 
-        press: 1 + (Math.random() * 2), 
-        cycles: Math.floor(Math.random() * 2000) 
-      };
-    });
-    setLiveData(initialInfo);
+    let isMounted = true;
 
-    const interval = setInterval(() => {
-      setLiveData(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(key => {
-          if (next[key]) {
-            next[key] = {
-              temp: Math.max(0, next[key].temp + (Math.random() * 1 - 0.5)),
-              press: Math.max(0, next[key].press + (Math.random() * 0.1 - 0.05)),
-              cycles: next[key].cycles + Math.floor(Math.random() * 2)
-            };
+    const fetchData = async () => {
+      const newData: Record<string, any> = {};
+      
+      const promises = userPLCs.map(async (plc) => {
+        // Obtenemos los valores a través de la misma API que en las vistas individuales, 
+        // pasamos mockMode: true para no romper en caso de no tener PLC conectado físicamente,
+        // pero usaremos el mapeo real de io_config.
+        try {
+          const res = await fetch('/api/plc/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brand: plc.brand,
+              ip: plc.ip,
+              port: plc.port?.toString() || '102',
+              rack: Number(plc.rack) || 0,
+              slot: Number(plc.slot) || 1,
+              isCloud: plc.is_cloud,
+              mockMode: true, // Forzamos simulación visual en el dashboard por ahora
+              ioTags: plc.io_config || []
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            newData[plc.id] = data.data;
           }
-        });
-        return next;
+        } catch (error) {
+          console.error('Polling error:', error);
+        }
       });
-    }, 2000);
 
-    return () => clearInterval(interval);
-  }, [userPLCs]); // Se depende de que ya estén cargados los PLCs desde Supabase para iniciar la simulación visual
+      await Promise.all(promises);
+
+      if (isMounted) {
+        setLiveData(prev => ({ ...prev, ...newData }));
+      }
+    };
+
+    fetchData(); // Obtener el primer set de datos Inmediatamente
+    const interval = setInterval(fetchData, 2000); // 2 segundos
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [userPLCs]); // Se depende de que ya estén cargados los PLCs desde Supabase para iniciar
 
   const displayPLCs = userPLCs; // Ahora ya TODOS (Admin o no) ven las reliquias guardadas, pero las verdaderas obtenidas desde su cuenta
 
@@ -165,14 +184,26 @@ export default function PlantDashboard() {
 
                   {isOnline && data ? (
                     <div className="grid grid-cols-2 gap-4 mt-2 mb-6">
-                        <div className="bg-[#F2EADA] border-[2px] border-[#CBB596] p-3 shadow-inner flex flex-col items-center justify-center text-center">
-                          <span className="text-[10px] uppercase font-bold text-[#69523C] mb-1 tracking-widest">P. Térmico</span>
-                          <span className="text-2xl font-black text-[#312011]">{data.temp.toFixed(1)}<span className="text-xs text-[#A3855B] ml-0.5">°C</span></span>
+                      {!plc.io_config || plc.io_config.length === 0 ? (
+                        <div className="col-span-2 flex items-center justify-center p-3 text-[#CBB596] text-[10px] tracking-widest uppercase font-bold border-2 border-dashed border-[#69523C]/50 opacity-80 h-[80px]">
+                          Sin Variables Configuradas
                         </div>
-                        <div className="bg-[#F2EADA] border-[2px] border-[#CBB596] p-3 shadow-inner flex flex-col items-center justify-center text-center">
-                          <span className="text-[10px] uppercase font-bold text-[#69523C] mb-1 tracking-widest">Fuerza</span>
-                          <span className="text-2xl font-black text-[#312011]">{data.press.toFixed(2)}<span className="text-xs text-[#A3855B] ml-0.5">bar</span></span>
-                        </div>
+                      ) : (
+                        plc.io_config.slice(0, 4).map((tag: any) => {
+                          const val = data[tag.name];
+                          const isBool = typeof val === 'boolean' || tag.type === 'Bool';
+                          const displayVal = isBool ? (val ? 'ON' : 'OFF') : (typeof val === 'number' ? val.toFixed(1) : String(val ?? 0));
+                          
+                          return (
+                            <div key={tag.name} className="bg-[#F2EADA] border-[2px] border-[#CBB596] p-3 shadow-inner flex flex-col items-center justify-center text-center overflow-hidden">
+                              <span className="text-[10px] uppercase font-bold text-[#69523C] mb-1 tracking-widest truncate w-full">{tag.name}</span>
+                              <span className={`text-xl font-black ${isBool ? (val ? 'text-green-700' : 'text-gray-500') : 'text-[#312011]'}`}>
+                                {displayVal}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-[90px] mt-2 mb-6 bg-black/60 border-[2px] border-red-900/50 shadow-inner">
