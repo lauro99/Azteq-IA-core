@@ -1,10 +1,41 @@
 ﻿'use client';
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLanguage } from '@/components/LanguageContext';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
   const { t } = useLanguage();
+  const router = useRouter();
+  const [operatorId, setOperatorId] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setErrorMsg('');
+    if (!operatorId || !accessCode) {
+      setErrorMsg('Por favor llena ambos campos.');
+      return;
+    }
+    
+    setIsLoading(true);
+    // Intentamos hacer Log In en Supabase (por defecto Supabase usa email, 
+    // asumimos que el ID de Operador será el correo con el que lo registres en Supabase)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: operatorId,
+      password: accessCode,
+    });
+
+    if (error) {
+      setErrorMsg('Credenciales incorrectas. Intenta de nuevo.');
+    } else {
+      router.push('/chat'); // Redireccionamos a tu ruta privada
+    }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen w-full flex flex-col relative overflow-y-auto bg-[#111] bg-no-repeat bg-center"
@@ -18,10 +49,31 @@ export default function Home() {
             <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">{t.accessControl}</span>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input type="text" placeholder={t.operatorId} className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" />
-            <input type="password" placeholder={t.accessCode} className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" />
-            <button className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-6 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">{t.enter}</button>
+            <input 
+              type="text" 
+              placeholder={t.operatorId} 
+              value={operatorId || ''}
+              onChange={(e) => setOperatorId(e.target.value)}
+              disabled={isLoading}
+              className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+            />
+            <input 
+              type="password" 
+              placeholder={t.accessCode} 
+              value={accessCode || ''}
+              onChange={(e) => setAccessCode(e.target.value)}
+              disabled={isLoading}
+              className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+            />
+            <button 
+              onClick={handleLogin}
+              disabled={isLoading}
+              className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black px-6 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
+            >
+              {isLoading ? '...' : t.enter}
+            </button>
           </div>
+          {errorMsg && <p className="text-red-400 text-[10px] uppercase font-bold tracking-widest">{errorMsg}</p>}
         </div>
       </div>
       <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-6 md:px-12 flex flex-col">
