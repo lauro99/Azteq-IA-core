@@ -26,10 +26,14 @@ export default function PlcDashboard() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [connectionMode, setConnectionMode] = useState<'local' | 'cloud'>('local');
+  const [mockMode, setMockMode] = useState(true);
+  const [plcData, setPlcData] = useState<any>(null);
 
   // Form states
   const [ipAddress, setIpAddress] = useState('');
   const [port, setPort] = useState('102'); // Default common port for PLCs like S7
+  const [rack, setRack] = useState('0');
+  const [slot, setSlot] = useState('1');
 
   useEffect(() => {
     const checkSession = async () => {
@@ -51,15 +55,37 @@ export default function PlcDashboard() {
     );
   }
 
-  const handleConnect = (e: React.FormEvent) => {
+  const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsConnecting(true);
     
-    // Simulate connection delay
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/plc/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand: brandId,
+          ip: ipAddress,
+          port,
+          rack: Number(rack),
+          slot: Number(slot),
+          isCloud: connectionMode === 'cloud',
+          mockMode
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setPlcData(data.data);
+        setIsConnected(true);
+      } else {
+        alert(data.error || 'Error conectando al PLC');
+      }
+    } catch (error) {
+      alert('Error de red contactando al servidor');
+    } finally {
       setIsConnecting(false);
-      setIsConnected(true);
-    }, 1500);
+    }
   };
 
   return (
@@ -117,8 +143,25 @@ export default function PlcDashboard() {
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Establecer Conexión</h2>
               <p className="text-white/50 text-sm font-light">
-                Selecciona la vía y los parámetros para conetar al controlador <span className="font-semibold text-white/80">{brandInfo.name}</span>.
+                Selecciona la vía y los parámetros para conectar al controlador <span className="font-semibold text-white/80">{brandInfo.name}</span>.
               </p>
+            </div>
+
+            {/* Admin Toggle (MOCK / REAL) */}
+            <div className="w-full flex items-center justify-between mb-6 px-4 py-2 bg-black/50 border border-white/5 rounded-xl">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-white uppercase tracking-wider">Modo Admin (Pruebas)</span>
+                <span className="text-[10px] text-white/40">Ignorar PLC físico y simular respuestas</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={mockMode} 
+                  onChange={(e) => setMockMode(e.target.checked)} 
+                />
+                <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div>
+              </label>
             </div>
 
             {/* Selector de Modo de Conexión */}
@@ -207,11 +250,21 @@ export default function PlcDashboard() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest px-1">Rack</label>
-                    <input type="number" defaultValue="0" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37] transition-all font-mono" />
+                    <input 
+                      type="number" 
+                      value={rack}
+                      onChange={(e) => setRack(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37] transition-all font-mono" 
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-semibold text-white/70 uppercase tracking-widest px-1">Slot</label>
-                    <input type="number" defaultValue="1" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37] transition-all font-mono" />
+                    <input 
+                      type="number" 
+                      value={slot}
+                      onChange={(e) => setSlot(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#D4AF37] transition-all font-mono" 
+                    />
                   </div>
                 </div>
               )}
@@ -256,22 +309,24 @@ export default function PlcDashboard() {
               {/* Cuadro de Sensor 1 */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
                 <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Temperatura CPU</span>
-                <span className="text-3xl font-black text-white">45<span className="text-lg text-white/40">°C</span></span>
+                <span className="text-3xl font-black text-white">{plcData?.temperaturaCpu ?? '--'}<span className="text-lg text-white/40">°C</span></span>
               </div>
               {/* Cuadro de Sensor 2 */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
                 <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Presión Sistema</span>
-                <span className="text-3xl font-black text-white">1.2<span className="text-lg text-white/40">bar</span></span>
+                <span className="text-3xl font-black text-white">{plcData?.presionSistema ?? '--'}<span className="text-lg text-white/40">bar</span></span>
               </div>
               {/* Cuadro de Sensor 3 */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
                 <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estatus General</span>
-                <span className="text-lg font-black text-green-400 mt-2 shadow-sm drop-shadow-lg">OPERATIVO</span>
+                <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral === 'OPERATIVO' ? 'text-green-400' : 'text-red-400'}`}>
+                  {plcData?.estatusGeneral ?? '--'}
+                </span>
               </div>
               {/* Cuadro de Sensor 4 */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
                 <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ciclos / Hora</span>
-                <span className="text-3xl font-black text-white">1,240</span>
+                <span className="text-3xl font-black text-white">{plcData?.ciclosPorHora?.toLocaleString() ?? '--'}</span>
               </div>
               {/* Mensaje Largo */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-2 hover:bg-white/10 transition-colors">
@@ -304,7 +359,7 @@ export default function PlcDashboard() {
                   
                   {/* Mensaje de Bienvenida */}
                   <div className="bg-white/10 text-white/90 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start w-11/12 border border-white/5 backdrop-blur-sm">
-                    Hola. Conexión de puente TIA Portal a <b>{brandInfo.name}</b> habilitada. Estoy visualizando los parámetros actuales (45°C, Operativo). ¿Qué datos o diagnósticos deseas obtener?
+                    Hola. Conexión de puente a <b>{brandInfo.name}</b> habilitada. Estoy visualizando los parámetros actuales ({plcData?.temperaturaCpu}°C, {plcData?.estatusGeneral}). ¿Qué datos o diagnósticos deseas obtener?
                   </div>
 
                   {/* Futuros mensajes del usuario pueden ir aquí */}
