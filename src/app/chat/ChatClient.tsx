@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
+import { supabase } from '@/lib/supabase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -24,6 +25,10 @@ export default function ChatClient() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
+    // Obtener la sesión para saber quién está enviando el mensaje
+    const { data: { session } } = await supabase.auth.getSession();
+    const userEmail = session?.user?.email || '';
+
     const userMsg = input;
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', content: userMsg }]);       
@@ -33,7 +38,7 @@ export default function ChatClient() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg })
+        body: JSON.stringify({ message: userMsg, userEmail })
       });
 
       const data = await res.json();

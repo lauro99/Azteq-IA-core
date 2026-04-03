@@ -12,11 +12,46 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json();
+    const { message, userEmail } = await request.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Mensaje vacío' }, { status: 400 });
     }
+
+    // --- LÓGICA DE CONTROL DE MENSAJES ---
+    // Exigimos correo. Extraemos lo que hay antes de la '@'.
+    const username = userEmail ? userEmail.split('@')[0].toLowerCase() : '';
+    
+    // Si NO es un administrador (no empieza con adm), aplicamos la regla de límites
+    if (!username.startsWith('adm')) {
+      // 1. Obtener los mensajes enviados HOY por este usuario
+      // ⚠️ IMPORTANTE: Necesitas crear una tabla 'limites_uso' en tu Supabase con:
+      // id, email(text), creado_en(date default now())
+      const hoy = new Date().toISOString().split('T')[0]; // "2026-04-02"
+      
+      const { count, error: countError } = await supabase
+        .from('limites_uso')
+        .select('*', { count: 'exact', head: true })
+        .eq('email', userEmail)
+        .gte('creado_en', `${hoy}T00:00:00.000Z`)
+        .lte('creado_en', `${hoy}T23:59:59.999Z`);
+
+      if (countError) {
+        console.error("Error consultando límite:", countError);
+      }
+      
+      const limit = 10; // límite de 10 mensajes
+      if (count !== null && count >= limit) {
+        return NextResponse.json({ 
+          error: `Has alcanzado el límite diario de ${limit} consultas. Regresa mañana.` 
+        }, { status: 403 });
+      }
+
+      // Si no ha superado el límite, guardamos el intento
+      await supabase.from('limites_uso').insert([{ email: userEmail }]);
+    }
+    // Si ES un admin (adm, adm1, adm2, etc...), nos saltamos la regla anterior y dejamos pasar.
+    // -------------------------------------
 
     // 1. Convertir la pregunta del usuario a vectores matemáticos
     const embeddingResponse = await openai.embeddings.create({
