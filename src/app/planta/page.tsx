@@ -64,19 +64,32 @@ export default function PlantaBrandSelection() {
       {/* Contenido principal */}
       <main className="relative z-10 flex-1 flex flex-col items-center pt-16 md:pt-24 px-6">
         
-        <div className="text-center mb-12 max-w-2xl">
-          <div className="inline-flex items-center justify-center p-4 rounded-full bg-[#D4AF37]/10 mb-6 border border-[#D4AF37]/30 shadow-[0_0_30px_rgba(212,175,55,0.15)]">
-            <svg className="w-10 h-10 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center mb-12 max-w-2xl flex flex-col items-center">
+          <div className="inline-flex items-center justify-center p-4 rounded-full bg-[#D4AF37]/10 mb-6 border border-[#D4AF37]/30 shadow-[0_0_30px_rgba(212,175,55,0.15)] relative group cursor-pointer hover:border-[#D4AF37]/80 hover:bg-[#D4AF37]/20 transition-all duration-500" onClick={() => router.push('/planta/dashboard')}>
+            <svg className="w-10 h-10 text-[#D4AF37] group-hover:scale-110 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
             </svg>
+            <div className="absolute inset-0 bg-[#D4AF37] rounded-full blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-white tracking-widest uppercase mb-4 drop-shadow-md">
+
+          <button 
+            onClick={() => router.push('/planta/dashboard')}
+            className="mb-8 bg-[#D1C3AD]/10 border border-[#D4AF37]/50 text-[#D4AF37] font-bold uppercase tracking-[0.2em] text-xs px-8 py-3 rounded-full hover:bg-[#D4AF37]/20 hover:scale-105 transition-all flex items-center gap-3 backdrop-blur-sm shadow-[0_0_15px_rgba(212,175,55,0.1)] relative overflow-hidden group"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+               Abrir Visión Global (Dashboard)
+            </span>
+            <div className="absolute inset-0 w-full h-full bg-[#D4AF37]/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] z-0"></div>
+          </button>
+
+          <h1 className="text-3xl md:text-5xl font-bold text-white tracking-widest uppercase mb-4 drop-shadow-md mt-4">
             Selecciona el PLC
           </h1>
           <p className="text-white/60 text-sm md:text-base max-w-lg mx-auto font-light leading-relaxed">
-            Elige la marca del controlador lógico programable al que la IA Planta deberá conectarse y analizar.
+            Elige la marca del controlador lógico programable al que la IA Planta deberá conectarse y analizar de forma individual.
           </p>
         </div>
 
