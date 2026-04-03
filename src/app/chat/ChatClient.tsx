@@ -19,7 +19,7 @@ export default function ChatClient() {
   const preprocessMath = (text: string) => {
     return text
       .replace(/\\\((.*?)\\\)/g, '$$$1$$') // Inline math: \(...\) -> $...$
-      .replace(/\\\[(.*?)\\\]/gs, '$$$$$1$$$$'); // Block math: \[...\] -> $$...$$
+      .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$'); // Block math: \[...\] -> $$...$$
   };
 
   const handleSend = async () => {
