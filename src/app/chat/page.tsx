@@ -68,7 +68,7 @@ export default function ChatPage() {
               <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] group-hover:text-white transition-colors">
                 Panel Admin
               </span>
-              <span className="text-sm">⚙️</span>
+              <span className="text-sm group-hover:rotate-90 transition-transform duration-500">❂</span>
             </Link>
           )}
         </div>

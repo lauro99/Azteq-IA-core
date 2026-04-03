@@ -15,6 +15,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
+
   useEffect(() => {
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -80,6 +82,15 @@ export default function Home() {
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <span className="text-white text-sm font-light">Operador: <b className="text-[#D4AF37]">{user.email?.split('@')[0]}</b></span>
+                {isAdmin && (
+                  <Link 
+                    href="/admin" 
+                    className="group flex flex-col sm:flex-row items-center gap-2 bg-[#1a1c18]/80 hover:bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-[0.1em] transition-all w-full sm:w-auto shadow-[0_0_10px_rgba(212,175,55,0.1)] hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+                  >
+                    <span>Panel Admin</span>
+                    <span className="text-sm group-hover:rotate-90 transition-transform duration-500">❂</span>
+                  </Link>
+                )}
                 <button 
                   onClick={handleLogout}
                   disabled={isLoading}
