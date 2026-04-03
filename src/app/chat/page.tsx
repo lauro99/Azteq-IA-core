@@ -39,9 +39,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen w-full bg-[#111] flex flex-col relative overflow-hidden bg-no-repeat bg-center"
-         style={{ backgroundImage: 'url(/Chat-Azteq.png)', backgroundSize: '100% 100%' }}>
-      
+    <div className="h-screen w-full bg-[#111] flex flex-col relative overflow-hidden bg-no-repeat bg-center bg-[url('/aztec_chat_phone.png')] md:bg-[url('/Chat-Azteq.png')] bg-[length:100%_100%]">
+
       {/* Botón de retorno y Cambio de Lenguaje */}
       <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 z-50 flex justify-between items-start pointer-events-none">
         

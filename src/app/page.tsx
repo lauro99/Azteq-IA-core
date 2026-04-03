@@ -68,8 +68,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-y-auto bg-[#111] bg-no-repeat bg-center"
-         style={{ backgroundImage: 'url(/azteq-IA.png)', backgroundSize: '100% 100%', backgroundAttachment: 'fixed' }}>
+    <div className="min-h-screen w-full flex flex-col relative overflow-y-auto bg-[#111] bg-no-repeat bg-center bg-[url('/azteq-IA_phone.png')] md:bg-[url('/azteq-IA.png')] bg-[length:100%_100%] bg-fixed">
       <div className="absolute inset-0 bg-black/60 pointer-events-none z-0"></div>
       <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex justify-between items-start pointer-events-none">
         <LanguageSelector />
