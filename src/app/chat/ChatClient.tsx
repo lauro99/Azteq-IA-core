@@ -2,12 +2,24 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 export default function ChatClient() {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Pre-procesar texto de la IA para convertir delimitadores \( \) a $ de KaTeX
+  const preprocessMath = (text: string) => {
+    return text
+      .replace(/\\\((.*?)\\\)/g, '$$$1$$') // Inline math: \(...\) -> $...$
+      .replace(/\\\[(.*?)\\\]/gs, '$$$$$1$$$$'); // Block math: \[...\] -> $$...$$
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -61,11 +73,34 @@ export default function ChatClient() {
           ) : (
             <div className="w-full space-y-5 flex flex-col justify-end h-full mt-auto font-sans">
               {messages.map((msg, index) => (
-                <div key={index} className={"flex w-full "}>
+                <div key={index} className={"flex w-full " + (msg.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div
-                    className={"max-w-[85%] px-5 py-3 rounded-[16px] whitespace-pre-wrap leading-relaxed text-[15px] shadow-sm font-medium "}
+                    className={"max-w-[85%] px-5 py-3 rounded-[16px] leading-relaxed text-[15px] shadow-sm font-medium " + 
+                      (msg.role === 'user' 
+                        ? 'bg-[#E8C673] text-[#121927] rounded-br-sm' 
+                        : 'bg-[#F2EADA] border border-[#CBB596] text-[#312011] rounded-bl-sm')}
                   >
-                    {msg.content}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={{
+                        p: ({node, ...props}) => <p className="m-0 mb-3 last:mb-0" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc ml-5 mb-3" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal ml-5 mb-3" {...props} />,
+                        li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                        h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-2 mt-4" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-md font-bold mb-2 mt-2" {...props} />,
+                        code: ({node, inline, ...props}: any) => inline 
+                          ? <code className="bg-black/10 px-1 py-0.5 rounded text-[13px] font-mono" {...props} />
+                          : <code className="block bg-[#121927] text-white p-3 rounded-md overflow-x-auto mb-3 text-[13px] font-mono" {...props} />,
+                        pre: ({node, ...props}) => <pre className="m-0 p-0 bg-transparent" {...props} />,
+                        a: ({node, ...props}) => <a className="text-[#A3855B] underline hover:text-[#8B6E4A]" {...props} />,
+                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-[#A3855B] pl-4 italic opacity-80 mb-3" {...props} />
+                      }}
+                    >
+                      {msg.role === 'ai' ? preprocessMath(msg.content) : msg.content}
+                    </ReactMarkdown>
                   </div>
                 </div>
               ))}
