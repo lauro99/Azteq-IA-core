@@ -42,8 +42,12 @@ create table if not exists plcs (
   rack integer default 0,
   slot integer default 1,
   is_cloud boolean default false,
+  io_config jsonb default '[]'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Asegurarnos de que exista la columna si la tabla ya había sido creada antes
+alter table plcs add column if not exists io_config jsonb default '[]'::jsonb;
 
 -- Habilitar seguridad a nivel de filas (RLS) para que un usuario no vea los PLCs de otro
 alter table plcs enable row level security;
