@@ -14,6 +14,7 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
 
@@ -70,9 +71,21 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full flex flex-col relative overflow-y-auto bg-[#111] bg-no-repeat bg-center bg-[url('/azteq-IA_phone.png')] md:bg-[url('/azteq-IA.png')] bg-[length:100%_100%] bg-fixed">
       <div className="absolute inset-0 bg-black/60 pointer-events-none z-0"></div>
-      <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex justify-between items-start pointer-events-none">
-        <LanguageSelector />
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex flex-col gap-3 pointer-events-auto w-full sm:w-auto max-w-[400px]">
+      <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between items-end sm:items-start pointer-events-none gap-4">
+        <div className="w-full sm:w-auto flex justify-between items-start pointer-events-auto">
+          <div className="pointer-events-auto">
+            <LanguageSelector />
+          </div>
+          <button 
+            className="sm:hidden bg-black/40 backdrop-blur-md border border-white/10 p-2 rounded-xl text-white ml-auto"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
+        </div>
+        <div className={`bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.3)] flex-col gap-3 pointer-events-auto w-full sm:w-auto max-w-[400px] ${isMenuOpen ? 'flex' : 'hidden sm:flex'}`}>
           {user ? (
             <>
               <div className="flex items-center gap-2 mb-1">
