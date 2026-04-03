@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
 
@@ -13,9 +13,11 @@ const brandData: Record<string, {name: string, color: string}> = {
   fanuc: { name: 'Fanuc', color: 'text-yellow-400' }
 };
 
-export default function PlcDashboard() {
+function PlcDashboardContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoConnectId = searchParams?.get('id');
   
   // Extraemos el nombre de la marca desde la URL (dinámicamente)
   const brandId = (params?.brand as string) || 'desconocido';
@@ -128,10 +130,56 @@ export default function PlcDashboard() {
           .order('created_at', { ascending: false });
 
         if (userPlcs && userPlcs.length > 0) {
-          setSavedPLCs([
+          const loadedPLCs = [
             { id: '', name: '-- Seleccionar Equipo Guardado --', ip: '', port: '102', rack: '0', slot: '1', is_cloud: false },
             ...userPlcs
-          ]);
+          ];
+          setSavedPLCs(loadedPLCs);
+
+          // Si venimos con un ID desde el dashboard, autoseleccionamos y autoconectamos
+          if (autoConnectId) {
+            const config = userPlcs.find((p: any) => p.id === autoConnectId);
+            if (config) {
+              setSelectedPlcId(config.id);
+              setIpAddress(config.ip);
+              setPort(config.port?.toString() || '102');
+              setRack(config.rack?.toString() || '0');
+              setSlot(config.slot?.toString() || '1');
+              setConnectionMode(config.is_cloud ? 'cloud' : 'local');
+              setNewPlcName(config.name);
+              setIoTags(config.io_config || []);
+              
+              // Iniciar conexión automática
+              setIsConnecting(true);
+              try {
+                const res = await fetch('/api/plc/connect', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    brand: brandId,
+                    ip: config.ip,
+                    port: config.port?.toString() || '102',
+                    rack: Number(config.rack) || 0,
+                    slot: Number(config.slot) || 1,
+                    isCloud: config.is_cloud,
+                    mockMode: !email.toLowerCase().startsWith('adm') ? false : true,
+                    ioTags: config.io_config || []
+                  })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setPlcData(data.data);
+                  setIsConnected(true);
+                } else {
+                  alert(data.error || 'Error conectando al PLC');
+                }
+              } catch (error) {
+                alert('Error de red contactando al servidor');
+              } finally {
+                setIsConnecting(false);
+              }
+            }
+          }
         }
 
         setLoading(false);
@@ -807,5 +855,13 @@ export default function PlcDashboard() {
         </main>
       )}
     </div>
+  );
+}
+
+export default function PlcDashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#111] flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-[#D4AF37] animate-pulse"></div></div>}>
+      <PlcDashboardContent />
+    </Suspense>
   );
 }

@@ -215,7 +215,7 @@ export default function PlantDashboard() {
                   )}
 
                   <button 
-                    onClick={() => router.push(`/planta/${plc.brand}`)}
+                    onClick={() => router.push(`/planta/${plc.brand}?id=${plc.id}`)}
                     className={`mt-auto w-full py-3 font-bold text-[12px] uppercase tracking-[0.2em] transition-all border-b-[4px] border-r-[4px] shadow-sm relative overflow-hidden group/btn
                       ${isOnline 
                         ? 'bg-[#121927] text-[#E8C673] border-[#E8C673]/60 hover:bg-[#1A2624] hover:text-[#FBE7A1] hover:border-[#E8C673]' 
