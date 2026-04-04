@@ -84,6 +84,86 @@ export default function AyudaConexionPlanta() {
                     Al mapear, verás un estado: <strong>"Leyendo..."</strong> significa que el sistema está intentando conectar. <strong>"Activo" (verde)</strong> indica que la variable se está refrescando en tiempo real.
                 </p>
             </section>
+            {/* Tabla de Errores Comunes */}
+            <section className="bg-[#1A1A1A] border border-red-900/40 rounded-lg p-6 mt-8">
+              <h2 className="text-xl font-bold mb-4 text-red-400 flex items-center gap-2">
+                <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                Todos los Errores y Soluciones
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-left">
+                  <thead className="bg-[#1A2624] text-red-300 uppercase text-xs border-b border-red-900/30">
+                    <tr>
+                      <th className="py-3 px-4 font-bold">Código/Error</th>
+                      <th className="py-3 px-4 font-bold">Descripción</th>
+                      <th className="py-3 px-4 font-bold">Solución</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-NOIP</td>
+                      <td className="py-2 px-4">Falta la dirección IP del PLC</td>
+                      <td className="py-2 px-4">Verifica que hayas ingresado la IP correcta en el formulario de conexión.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-CONN</td>
+                      <td className="py-2 px-4">Error de conexión en puerto industrial</td>
+                      <td className="py-2 px-4">Revisa que el PLC esté encendido, conectado a la red y que el puerto esté abierto (ej. 102 para Siemens, 502 para Modbus).</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-READ</td>
+                      <td className="py-2 px-4">Error leyendo bus de datos</td>
+                      <td className="py-2 px-4">Verifica que la dirección de memoria/tag exista y que el PLC esté respondiendo correctamente.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-TIMEOUT</td>
+                      <td className="py-2 px-4">Tiempo de espera agotado al intentar conectar con el PLC</td>
+                      <td className="py-2 px-4">Verifica la conexión de red y que el PLC esté accesible. Aumenta el tiempo de espera si es necesario.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-AUTH</td>
+                      <td className="py-2 px-4">Error de autenticación o acceso denegado</td>
+                      <td className="py-2 px-4">Revisa las credenciales y permisos de acceso al PLC.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-TAG</td>
+                      <td className="py-2 px-4">Tag o dirección de memoria no encontrada</td>
+                      <td className="py-2 px-4">Verifica que el nombre del tag o la dirección sean correctos y existan en el PLC.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-PARSE</td>
+                      <td className="py-2 px-4">Error al interpretar la respuesta del PLC</td>
+                      <td className="py-2 px-4">Asegúrate de que el PLC esté enviando datos en el formato esperado.</td>
+                    </tr>
+                    <tr className="border-l-4 border-yellow-400 bg-yellow-900/10">
+                      <td className="py-2 px-4 font-mono">WARN-201</td>
+                      <td className="py-2 px-4">Latencia elevada en red EtherNet/IP</td>
+                      <td className="py-2 px-4">Revisa el cableado, switches y la calidad de la red industrial.</td>
+                    </tr>
+                    <tr className="border-l-4 border-yellow-400 bg-yellow-900/10">
+                      <td className="py-2 px-4 font-mono">WARN-PLC-REBOOT</td>
+                      <td className="py-2 px-4">El PLC fue reiniciado inesperadamente</td>
+                      <td className="py-2 px-4">Verifica la causa del reinicio y revisa el historial de eventos del PLC.</td>
+                    </tr>
+                    <tr className="border-l-4 border-green-400 bg-green-900/10">
+                      <td className="py-2 px-4 font-mono">RES-102</td>
+                      <td className="py-2 px-4">Sensor de límite restablecido</td>
+                      <td className="py-2 px-4">No requiere acción. El sistema detectó que el error fue resuelto.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-UNSUPPORTED</td>
+                      <td className="py-2 px-4">Protocolo o modelo de PLC no soportado</td>
+                      <td className="py-2 px-4">Consulta la documentación para ver los modelos soportados o contacta a soporte técnico.</td>
+                    </tr>
+                    <tr className="border-l-4 border-red-400 bg-red-950/10">
+                      <td className="py-2 px-4 font-mono">ERR-EXC</td>
+                      <td className="py-2 px-4">Excepción de Servidor</td>
+                      <td className="py-2 px-4">Contacta a soporte técnico. Puede ser un error interno inesperado.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         )}
 
