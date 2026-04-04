@@ -72,13 +72,13 @@ export default function PlantDashboard() {
     const handleDeleteGroup = async (id: string) => {
       if (!confirm('¿Eliminar este grupo/linea?')) return;
       setGroupLoading(true);
-      await supabase.from('plc_groups').delete().eq('id', id);
       if (userId) {
         const { data } = await supabase.from('plc_groups').select('*').eq('user_id', userId).order('created_at', { ascending: true });
         setGroups(data || []);
       }
       setGroupLoading(false);
     };
+
   const router = useRouter();
   const [liveData, setLiveData] = useState<Record<string, any>>({});
   const [isAdmin, setIsAdmin] = useState(false);
@@ -370,6 +370,14 @@ export default function PlantDashboard() {
                                   <option key={g.id} value={g.id}>{g.name}</option>
                                 ))}
                               </select>
+                              <button
+                                className="ml-2 px-2 py-1 rounded bg-[#E8C673] text-[#312011] text-xs font-bold flex items-center gap-1 hover:bg-[#CBB596] transition-all"
+                                onClick={() => router.push(`/planta/${plc.brand}?id=${plc.id}`)}
+                                title="Inspeccionar en tiempo real"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" /></svg>
+                                Inspeccionar
+                              </button>
                               <button
                                 className="ml-2 px-2 py-1 rounded bg-red-700 text-white text-xs hover:bg-red-800 transition-all"
                                 onClick={() => handleDeletePLC(plc.id)}
