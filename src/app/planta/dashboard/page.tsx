@@ -5,20 +5,11 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
 
-// Eliminar PLC con confirmación
-const handleDeletePLC = async (plcId: string, setUserPLCs: any) => {
-  if (!confirm('¿Seguro que deseas borrar este PLC? Esta acción es permanente y no se puede deshacer.')) return;
-  await supabase.from('plcs').delete().eq('id', plcId);
-  // Refrescar PLCs
-  const { data: plcs } = await supabase
-    .from('plcs')
-    .select('*')
-    .eq('user_id', supabase.auth.user()?.id)
-    .order('created_at', { ascending: false });
-  if (plcs) setUserPLCs(plcs.map((plc: any) => ({ ...plc, status: 'online' })));
-};
+
 
 export default function PlantDashboard() {
+      // Estado para userId
+      const [userId, setUserId] = useState<string | null>(null);
     // Grupos/Lineas de producción
     const [groups, setGroups] = useState<any[]>([]);
     const [groupName, setGroupName] = useState('');
@@ -81,7 +72,7 @@ export default function PlantDashboard() {
         router.push('/');
         return;
       }
-      
+      setUserId(session.user.id);
       const email = session.user?.email || '';
       const isUserAdmin = email.toLowerCase().startsWith('adm');
       setIsAdmin(isUserAdmin);
@@ -94,11 +85,8 @@ export default function PlantDashboard() {
         .order('created_at', { ascending: false });
 
       if (plcs) {
-        // Inicializamos estatus en "online" de forma predeterminada para ver la maqueta
-        // En el futuro, aquí se hará ping real a las máquinas
         setUserPLCs(plcs.map(plc => ({ ...plc, status: 'online' })));
       }
-      
       setLoading(false);
     };
     fetchSessionAndData();
@@ -159,12 +147,27 @@ export default function PlantDashboard() {
 
   // Permitir asignar PLCs a grupos/lineas
   const handleAssignGroup = async (plcId: string, groupId: string) => {
+    if (!userId) return;
     await supabase.from('plcs').update({ group_id: groupId }).eq('id', plcId);
     // Refrescar PLCs
     const { data: plcs } = await supabase
       .from('plcs')
       .select('*')
-      .eq('user_id', supabase.auth.user()?.id)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (plcs) setUserPLCs(plcs.map(plc => ({ ...plc, status: 'online' })));
+  };
+
+  // Eliminar PLC con confirmación (ahora dentro del componente)
+  const handleDeletePLC = async (plcId: string) => {
+    if (!userId) return;
+    if (!confirm('¿Seguro que deseas borrar este PLC? Esta acción es permanente y no se puede deshacer.')) return;
+    await supabase.from('plcs').delete().eq('id', plcId);
+    // Refrescar PLCs
+    const { data: plcs } = await supabase
+      .from('plcs')
+      .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (plcs) setUserPLCs(plcs.map(plc => ({ ...plc, status: 'online' })));
   };
