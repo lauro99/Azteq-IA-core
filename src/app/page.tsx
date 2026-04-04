@@ -16,6 +16,7 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<'none' | 'expert' | 'plant'>('none');
+  const [showInfo, setShowInfo] = useState(false);
 
   const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
 
@@ -74,8 +75,18 @@ export default function Home() {
       <div className="absolute inset-0 bg-black/60 pointer-events-none z-0"></div>
       <div className="absolute top-0 left-0 w-full z-20 p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between items-end sm:items-start pointer-events-none gap-4">
         <div className="w-full sm:w-auto flex justify-between items-start pointer-events-auto">
-          <div className="pointer-events-auto">
+          <div className="pointer-events-auto flex items-center gap-3">
             <LanguageSelector />
+            <button 
+              onClick={() => setShowInfo(true)}
+              className="group flex flex-row items-center gap-2 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 rounded-xl transition-all backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
+              title="¿Qué hace cada IA?"
+            >
+              <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Info</span>
+            </button>
           </div>
           <button 
             className="sm:hidden bg-black/40 backdrop-blur-md border border-white/10 p-2 rounded-xl text-white ml-auto"
@@ -346,6 +357,92 @@ export default function Home() {
           <p>{t.footer}</p>
         </footer>
       </div>
+
+      {/* Modal Informativo */}
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 sm:p-6 overflow-y-auto">
+          <div className="relative w-full max-w-[800px] bg-[#1a1c18] border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col md:flex-row overflow-hidden my-auto animate-in fade-in zoom-in duration-300">
+            
+            <button 
+              onClick={() => setShowInfo(false)}
+              className="absolute top-4 right-4 z-20 w-8 h-8 bg-black/40 hover:bg-white/10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all border border-white/10"
+            >
+              ✕
+            </button>
+
+            {/* IA EXPERTA COLUMNA */}
+            <div className="flex-1 p-8 sm:p-10 border-b md:border-b-0 md:border-r border-white/10 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0D9488]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 bg-black/40 border border-[#0D9488]/40 shadow-[0_0_15px_rgba(13,148,136,0.3)] rounded-2xl flex items-center justify-center text-[#0D9488]">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 2L3 12l9 10 9-10L12 2z" />
+                    <circle cx="12" cy="12" r="3" strokeWidth="1.5" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6v3m0 6v3m-6-6h3m6 0h3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaExpert || 'IA Experta'}</h3>
+                  <p className="text-[#0D9488] text-xs font-bold tracking-widest uppercase">Asistente Técnico (RAG)</p>
+                </div>
+              </div>
+              
+              <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#0D9488] mt-0.5">✓</span>
+                  <span><strong>Zero Alucinaciones:</strong> Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#0D9488] mt-0.5">✓</span>
+                  <span><strong>Dispara tu OEE (Downtime Killer):</strong> Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#0D9488] mt-0.5">✓</span>
+                  <span><strong>Experto Matemático Integrado:</strong> Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* IA PLANTA COLUMNA */}
+            <div className="flex-1 p-8 sm:p-10 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-12 h-12 bg-black/40 border border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.3)] rounded-2xl flex items-center justify-center text-[#D4AF37]">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4l-3 4h6l-3-4z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 8l-3 5h16l-3-5H7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2 13l-2 7h24l-2-7H2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v5m-4-4v4m8-4v4" />
+                    <rect x="10" y="10" width="4" height="3" className="fill-white/10" strokeWidth="1.5" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaPlant || 'IA Planta'}</h3>
+                  <p className="text-[#D4AF37] text-xs font-bold tracking-widest uppercase">Monitoreo IoT & Gemelo Digital</p>
+                </div>
+              </div>
+
+              <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#D4AF37] mt-0.5">✓</span>
+                  <span><strong>Conecta con Cualquier PLC:</strong> Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#D4AF37] mt-0.5">✓</span>
+                  <span><strong>Crece a tu Ritmo:</strong> Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#D4AF37] mt-0.5">✓</span>
+                  <span><strong>Tu Planta en tu Bolsillo:</strong> Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.</span>
+                </li>
+              </ul>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }

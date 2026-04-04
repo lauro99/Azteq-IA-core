@@ -44,8 +44,9 @@ function PlcDashboardContent() {
 
   // Configuración de E/S
   const [showConfigurator, setShowConfigurator] = useState(false);
-  const [ioTags, setIoTags] = useState<{id: string, group?: string, name: string, address: string, type: string}[]>([]);
-  const [newTag, setNewTag] = useState({ group: '', name: '', address: '', type: 'Bool' });
+  const [showMapperHelp, setShowMapperHelp] = useState(false);
+  const [ioTags, setIoTags] = useState<{id: string, group?: string, name: string, address: string, type: string, unit?: string}[]>([]);
+  const [newTag, setNewTag] = useState({ group: '', name: '', address: '', type: 'Bool', unit: '' });
 
   // Form states
   const [ipAddress, setIpAddress] = useState('');
@@ -272,72 +273,111 @@ function PlcDashboardContent() {
       {/* Modal del Configurador de E/S */}
       {showConfigurator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#121927] border-[3px] border-[#E8C673] w-full max-w-2xl text-[#FCFAEA] relative flex flex-col max-h-[90vh] shadow-[0_0_30px_rgba(232,198,115,0.2)]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
+          <div className="bg-[#121927] border-[3px] border-[#E8C673] w-full max-w-5xl text-[#FCFAEA] relative flex flex-col max-h-[90vh] shadow-[0_0_30px_rgba(232,198,115,0.2)]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
             <div className="p-6 border-b border-[#E8C673]/30 flex justify-between items-center bg-[#1A2624]">
-              <h3 className="text-lg font-bold text-[#E8C673] tracking-widest font-serif flex items-center gap-2 uppercase">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Mapeador Libre de Variables
-              </h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-bold text-[#E8C673] tracking-widest font-serif flex items-center gap-2 uppercase">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Mapeador Libre de Variables
+                </h3>
+                <button 
+                  onClick={() => setShowMapperHelp(!showMapperHelp)} 
+                  className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border transition-all ${showMapperHelp ? 'bg-[#E8C673] text-black border-[#E8C673]' : 'bg-transparent text-[#CBB596] border-[#CBB596] hover:bg-[#E8C673]/20'}`}
+                >
+                  {showMapperHelp ? 'Ocultar Ayuda' : '¿Cómo funciona?'}
+                </button>
+              </div>
               <button onClick={() => setShowConfigurator(false)} className="text-[#CBB596] hover:text-red-400 transition-colors">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             <div className="p-6 flex-1 overflow-y-auto flex flex-col gap-4">
+              {/* Panel de Ayuda (Condicional) */}
+              {showMapperHelp && (
+                <div className="bg-[#E8C673]/10 border-l-4 border-[#E8C673] p-4 text-sm text-[#FCFAEA] font-light mb-2">
+                  <h4 className="font-bold text-[#E8C673] text-base mb-2">Instrucciones Básicas para Universitarios de Mantenimiento</h4>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Área del Equipo:</strong> Imagina que es la carpeta donde guardarás la variable. Ejemplos: <em>"Banda Transportadora"</em>, <em>"Horno 1"</em> u <em>"Organizador"</em>.</li>
+                    <li><strong>¿Qué estamos leyendo?:</strong> Pon el nombre específico de lo que detecta el sensor. <strong>Regla de oro: No uses espacios</strong> (usa guiones bajos `_`). Ejemplo: <em>Temperatura_Agua</em>.</li>
+                    <li><strong>Dirección del PLC:</strong> Aquí pones la ubicación exacta en el autómata. Si tienes dudas, revisa el manual del fabricante.
+                      <ul className="pl-4 mt-1 text-gray-400 text-xs list-[circle]">
+                        <li><strong className="text-white">Siemens:</strong> Marcas (ej. M0.0), Entradas/Salidas (ej. I0.0 / Q0.1) o Data Blocks (ej. DB1,X0.0).</li>
+                        <li><strong className="text-white">Allen-Bradley:</strong> El nombre de la etiqueta (Tag) directo (ej. Motor_Activo).</li>
+                        <li><strong className="text-white">Modbus (Delta/Keyence):</strong> Usa los registros clásicos (ej. 40001, 40002).</li>
+                      </ul>
+                    </li>
+                      <li><strong>Tipo de Dato y Unidad:</strong> Selecciona si es una simple alerta visual encendido/apagado (<strong>Sí/No</strong>), si tiene punto decimal (<strong>Decimales</strong>) o son números redondos (<strong>Enteros</strong>). Escribe la unidad de medida según corresponda (ej. "°C", "PSI", "kg", "RPM"). Para tipos <strong>Sí/No (Bool)</strong>, puedes dejar la unidad en blanco o usar textos descriptivos como "(ON/OFF)", "Activo/Inactivo" o "Abierto".</li>
+                  </ul>
+                </div>
+              )}
+
               {/* Formulario de nueva variable */}
               <div className="bg-black/40 border border-[#E8C673]/30 p-4 relative" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
-                <h4 className="text-[#CBB596] text-xs font-bold uppercase tracking-widest mb-3">Agregar Nueva Memoria / Pin</h4>
+                <h4 className="text-[#CBB596] text-xs font-bold uppercase tracking-widest mb-3">Vincular Nueva Señal del PLC</h4>
                 <div className="flex flex-col md:flex-row gap-3">
-                  <div className="w-full md:w-1/4 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
-                      placeholder="Rutina/Grupo (ej. Empaque)"
+                      placeholder="Área del Equipo (ej. Empacadora)"
                       value={newTag.group}
                       onChange={(e) => setNewTag({...newTag, group: e.target.value})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-bold"
                     />
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Agrupa variables por bloque de programa o zona. Ej: 'Motor Principal'">
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Organiza tus señales por máquina o etapa (carpeta) para no perderte después. Ej: 'Zona de Enfriamiento'">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/4 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
-                      placeholder="Nombre (ej. Motor_1)"
+                      placeholder="¿Qué estamos leyendo? (ej. Temp_Horno)"
                       value={newTag.name}
                       onChange={(e) => setNewTag({...newTag, name: e.target.value})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-bold"
                     />
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Nombre lógico para tu Gemelo Digital. Evita espacios.">
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Ponle un nombre lógico para que la Inteligencia Artificial lo entienda. Importante: ¡No uses espacios!">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/4 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
-                      placeholder="Dir. (DB/M/I/Q)"
-                      title="Ejemplos: DB1,REAL0 o M0.0 o Q0.1"
+                      placeholder="Dirección del PLC (ej. M0.0, 40001)"
+                      title="Ejemplos: Si es Siemens pon M0.0 o DB1,X0. Si es AB pon Motor_Run. Si es Modbus pon 40001."
                       value={newTag.address}
                       onChange={(e) => setNewTag({...newTag, address: e.target.value})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-mono font-bold uppercase"
                     />
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Dirección real en el PLC. Entradas (I), Salidas (Q), Memorias (M), o Data Blocks (DB1,REAL0)">
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Revisa tu software (TIA Portal, Studio 5000, etc.) y escribe la dirección de memoria exacta o el Tag.">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/4 relative flex gap-2">
+                  <div className="flex-1 min-w-0 w-full relative group">
+                    <input
+                      type="text"
+                      placeholder="Unidad (ej. °C, kg, bar)"
+                      value={newTag.unit}
+                      onChange={(e) => setNewTag({...newTag, unit: e.target.value})}
+                      className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-bold"
+                    />
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Unidad de medida para mostrar en el dashboard (ej. bar, °C, RPM, kg). Para tipos Bool puedes usar (ON/OFF), Activo/Inactivo, o blanco.">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 w-full relative flex gap-2">
                     <div className="relative flex-1 group">
                       <select
                         value={newTag.type}
                         onChange={(e) => setNewTag({...newTag, type: e.target.value})}
                         className="w-full h-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-8 py-2 text-[#FCFAEA] focus:outline-none focus:border-[#E8C673] text-sm font-bold appearance-none cursor-pointer"
                       >
-                        <option value="Bool">Booleano</option>
-                        <option value="Real">Real (Float)</option>
-                        <option value="Int">Entero</option>
+                        <option value="Bool">Sí/No (Bool - Bits)</option>
+                        <option value="Real">Decimales (Real/Float)</option>
+                        <option value="Int">Números Enteros (Int)</option>
                         <option value="DInt">Doble Entero</option>
                         <option value="Byte">Byte</option>
                         <option value="Word">Word</option>
@@ -353,10 +393,10 @@ function PlcDashboardContent() {
                       onClick={() => {
                         if (newTag.name && newTag.address) {
                           setIoTags([...ioTags, { id: Date.now().toString(), ...newTag }]);
-                          setNewTag({ group: newTag.group, name: '', address: '', type: 'Bool' }); // Mantiene el grupo para agilidad
+                          setNewTag({ group: newTag.group, name: '', address: '', type: 'Bool', unit: '' }); // Mantiene el grupo para agilidad
                         }
                       }}
-                      className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-4 py-2 font-bold tracking-widest text-sm transition-all shadow-[2px_2px_0_0_rgba(163,133,91,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                      className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-4 py-2 font-bold tracking-widest text-sm transition-all shadow-[2px_2px_0_0_rgba(163,133,91,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] shrink-0 md:w-12 flex items-center justify-center"
                       style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
                     >
                       +
@@ -368,7 +408,7 @@ function PlcDashboardContent() {
               {/* Lista de tags creados */}
               <div className="mt-2 text-sm flex-1">
                 <div className="grid grid-cols-12 gap-2 text-[#CBB596] font-bold text-[10px] uppercase tracking-widest border-b-[2px] border-[#E8C673]/30 pb-2 mb-2">
-                  <div className="col-span-3 px-2 flex items-center gap-1">
+                  <div className="col-span-2 px-2 flex items-center gap-1">
                     Grupo/Rutina
                     <span title="Banderas, memorias o entradas bajo un mismo proceso" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
@@ -377,14 +417,17 @@ function PlcDashboardContent() {
                     <span title="El nombre con el que el Gemelo Digital entenderá qué es esta variable" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
                   <div className="col-span-3 flex items-center gap-1">
-                    Dirección FÍSICA/VIRTUAL
+                    Dirección
                     <span title="La ruta exacta en el mapa de memoria del PLC" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
+                  </div>
+                  <div className="col-span-1 flex items-center gap-1">
+                    Unidad
                   </div>
                   <div className="col-span-2 flex items-center gap-1">
                     Tipo Dato
                     <span title="Las dimensiones y formato de los datos que extraes" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
-                  <div className="col-span-1 text-right pr-2">Del</div>
+                  <div className="col-span-1 text-right pr-2">Acción</div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 max-h-[30vh] overflow-y-auto pr-2">
@@ -396,15 +439,28 @@ function PlcDashboardContent() {
                   ) : (
                     ioTags.map(tag => (
                       <div key={tag.id} className="grid grid-cols-12 gap-2 items-center bg-[#1A2624]/70 hover:bg-[#1A2624] p-2.5 border-l-[4px] border-[#D4AF37] group transition-colors">
-                        <div className="col-span-3 font-semibold text-[#8B9BB4] text-xs px-2 truncate" title={tag.group || 'Sin grupo'}>{tag.group || '---'}</div>
+                        <div className="col-span-2 font-semibold text-[#8B9BB4] text-xs px-2 truncate" title={tag.group || 'Sin grupo'}>{tag.group || '---'}</div>
                         <div className="col-span-3 font-bold text-[#FCFAEA] text-sm break-words px-2">{tag.name}</div>
                         <div className="col-span-3 font-mono text-[#4ade80] text-xs uppercase hover:text-white transition-colors cursor-help" title={`Dirección en PLC: ${tag.address}`}>{tag.address}</div>
+                        <div className="col-span-1 font-mono text-[#A3855B] text-xs">{tag.unit || '-'}</div>
                         <div className="col-span-2 text-[#E8C673] text-xs font-bold uppercase">{tag.type}</div>
-                        <div className="col-span-1 text-right pr-1">
+                        <div className="col-span-1 flex gap-3 justify-end items-center pr-1">
+                          <button
+                            onClick={() => {
+                              setNewTag({ group: tag.group || '', name: tag.name, address: tag.address, type: tag.type, unit: tag.unit || '' });
+                              setIoTags(ioTags.filter(t => t.id !== tag.id));
+                            }}
+                            className="text-[#E8C673] opacity-50 group-hover:opacity-100 hover:text-[#D4AF37] hover:scale-110 transition-all text-lg leading-none"
+                            aria-label={`Editar ${tag.name}`}
+                            title="Editar"
+                          >
+                            ✎
+                          </button>
                           <button 
                             onClick={() => setIoTags(ioTags.filter(t => t.id !== tag.id))}
                             className="text-red-400 opacity-50 group-hover:opacity-100 hover:text-red-300 hover:scale-110 font-bold transition-all text-lg leading-none"
                             aria-label={`Eliminar ${tag.name}`}
+                            title="Eliminar"
                           >
                             ×
                           </button>
@@ -719,6 +775,11 @@ function PlcDashboardContent() {
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
                   MONITOREO EN TIEMPO REAL
                 </h2>
+                {selectedPlcId && newPlcName && (
+                  <div className="text-xs text-white/60 font-mono mt-1 ml-7">
+                    PLC: {newPlcName}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-3 flex-wrap">
                   {/* Botón de Configuración de E/S en Dashboard */}
@@ -770,7 +831,7 @@ function PlcDashboardContent() {
                       <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
                       <span className="text-3xl font-black text-white">
                         {plcData?.[tag.name] !== undefined ? plcData[tag.name] : '--'}
-                        {tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>}
+                        {tag.unit ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>)}
                       </span>
                     </div>
                   ))}

@@ -57,6 +57,14 @@ export default function PlantaBrandSelection() {
         <div className="flex items-center gap-4">
           <LanguageSelector />
           <div className="h-6 w-px bg-white/20"></div>
+          <button
+            onClick={() => router.push('/planta/ayuda')}
+            className="flex items-center gap-1 px-3 py-1 rounded-full border border-[#D4AF37]/60 bg-[#D4AF37]/10 text-[#D4AF37] font-bold text-xs uppercase tracking-widest hover:bg-[#D4AF37]/30 hover:text-black transition-all shadow-sm"
+            title="Ver ayuda y documentación de conexión"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 14h.01M16 10h.01M12 18h.01M12 6h.01" /></svg>
+            Ayuda
+          </button>
           <span className="text-[#D4AF37] font-bold text-sm tracking-widest uppercase shadow-sm">IA Planta</span>
         </div>
       </header>
