@@ -775,6 +775,11 @@ function PlcDashboardContent() {
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
                   MONITOREO EN TIEMPO REAL
                 </h2>
+                {selectedPlcId && newPlcName && (
+                  <div className="text-xs text-white/60 font-mono mt-1 ml-7">
+                    PLC: {newPlcName}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-end gap-3 flex-wrap">
                   {/* Botón de Configuración de E/S en Dashboard */}
