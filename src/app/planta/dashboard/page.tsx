@@ -374,18 +374,6 @@ export default function PlantDashboard() {
                                 title="Eliminar PLC"
                               >Eliminar</button>
                             </div>
-                            <div className="mb-2 flex items-center gap-2">
-                              <select
-                                className="px-2 py-1 rounded border border-gray-400 text-xs bg-[#222] text-white"
-                                value={plc.group_id || ''}
-                                onChange={e => handleAssignGroup(plc.id, e.target.value)}
-                              >
-                                <option value="">Sin Grupo</option>
-                                {groups.map(g => (
-                                  <option key={g.id} value={g.id}>{g.name}</option>
-                                ))}
-                              </select>
-                            </div>
                             {/* ...existing code... */}
                             <div className="flex justify-between items-start mb-4">
                               <div className="pr-4">
