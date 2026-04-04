@@ -1,10 +1,72 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
 
+// Eliminar PLC con confirmación
+const handleDeletePLC = async (plcId: string, setUserPLCs: any) => {
+  if (!confirm('¿Seguro que deseas borrar este PLC? Esta acción es permanente y no se puede deshacer.')) return;
+  await supabase.from('plcs').delete().eq('id', plcId);
+  // Refrescar PLCs
+  const { data: plcs } = await supabase
+    .from('plcs')
+    .select('*')
+    .eq('user_id', supabase.auth.user()?.id)
+    .order('created_at', { ascending: false });
+  if (plcs) setUserPLCs(plcs.map((plc: any) => ({ ...plc, status: 'online' })));
+};
+
 export default function PlantDashboard() {
+    // Grupos/Lineas de producción
+    const [groups, setGroups] = useState<any[]>([]);
+    const [groupName, setGroupName] = useState('');
+    const [editingGroup, setEditingGroup] = useState<any>(null);
+    const [groupLoading, setGroupLoading] = useState(false);
+
+    // Obtener grupos del usuario
+    useEffect(() => {
+      const fetchGroups = async () => {
+        setGroupLoading(true);
+        const { data, error } = await supabase
+          .from('plc_groups')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (!error && data) setGroups(data);
+        setGroupLoading(false);
+      };
+      fetchGroups();
+    }, []);
+
+    // Crear o editar grupo
+    const handleSaveGroup = async (e: any) => {
+      e.preventDefault();
+      setGroupLoading(true);
+      if (editingGroup) {
+        // Editar
+        await supabase.from('plc_groups').update({ name: groupName }).eq('id', editingGroup.id);
+      } else {
+        // Crear
+        await supabase.from('plc_groups').insert([{ name: groupName }]);
+      }
+      setGroupName('');
+      setEditingGroup(null);
+      // Refrescar
+      const { data } = await supabase.from('plc_groups').select('*').order('created_at', { ascending: true });
+      setGroups(data || []);
+      setGroupLoading(false);
+    };
+
+    // Eliminar grupo
+    const handleDeleteGroup = async (id: string) => {
+      if (!confirm('¿Eliminar este grupo/linea?')) return;
+      setGroupLoading(true);
+      await supabase.from('plc_groups').delete().eq('id', id);
+      const { data } = await supabase.from('plc_groups').select('*').order('created_at', { ascending: true });
+      setGroups(data || []);
+      setGroupLoading(false);
+    };
   const router = useRouter();
   const [liveData, setLiveData] = useState<Record<string, any>>({});
   const [isAdmin, setIsAdmin] = useState(false);
@@ -95,7 +157,19 @@ export default function PlantDashboard() {
     };
   }, [userPLCs]); // Se depende de que ya estén cargados los PLCs desde Supabase para iniciar
 
-  const displayPLCs = userPLCs; // Ahora ya TODOS (Admin o no) ven las reliquias guardadas, pero las verdaderas obtenidas desde su cuenta
+  // Permitir asignar PLCs a grupos/lineas
+  const handleAssignGroup = async (plcId: string, groupId: string) => {
+    await supabase.from('plcs').update({ group_id: groupId }).eq('id', plcId);
+    // Refrescar PLCs
+    const { data: plcs } = await supabase
+      .from('plcs')
+      .select('*')
+      .eq('user_id', supabase.auth.user()?.id)
+      .order('created_at', { ascending: false });
+    if (plcs) setUserPLCs(plcs.map(plc => ({ ...plc, status: 'online' })));
+  };
+
+  const displayPLCs = userPLCs;
 
 
   // Real PLC errors/alerts from Supabase
@@ -147,6 +221,60 @@ export default function PlantDashboard() {
       </header>
 
       <main className="relative z-10 flex-1 p-6 md:p-10 mx-auto w-full max-w-7xl">
+        {/* Panel de gestión de grupos/lineas */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-[#E8C673] mb-2 flex items-center gap-2">
+            <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2h5" /></svg>
+            Líneas / Grupos de Producción
+          </h2>
+          <form onSubmit={handleSaveGroup} className="flex gap-2 items-center mb-4">
+            <input
+              type="text"
+              className="px-3 py-2 rounded bg-[#222] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-[#E8C673]"
+              placeholder="Nombre de la línea o grupo"
+              value={groupName}
+              onChange={e => setGroupName(e.target.value)}
+              disabled={groupLoading}
+              required
+              maxLength={32}
+            />
+            <button
+              type="submit"
+              className="bg-[#E8C673] text-black font-bold px-4 py-2 rounded hover:bg-[#CBB596] transition-all"
+              disabled={groupLoading || !groupName.trim()}
+            >
+              {editingGroup ? 'Guardar Cambios' : 'Crear Grupo'}
+            </button>
+            {editingGroup && (
+              <button
+                type="button"
+                className="ml-2 px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
+                onClick={() => { setEditingGroup(null); setGroupName(''); }}
+              >Cancelar</button>
+            )}
+          </form>
+          <div className="flex flex-wrap gap-3">
+            {groupLoading ? (
+              <span className="text-gray-400">Cargando...</span>
+            ) : groups.length === 0 ? (
+              <span className="text-gray-400">No hay grupos creados.</span>
+            ) : (
+              groups.map(group => (
+                <div key={group.id} className="flex items-center gap-2 bg-[#1A1A1A] border border-[#E8C673]/30 rounded px-3 py-1">
+                  <span className="font-bold text-[#E8C673]">{group.name}</span>
+                  <button
+                    className="text-xs text-blue-400 hover:underline"
+                    onClick={() => { setEditingGroup(group); setGroupName(group.name); }}
+                  >Editar</button>
+                  <button
+                    className="text-xs text-red-400 hover:underline"
+                    onClick={() => handleDeleteGroup(group.id)}
+                  >Eliminar</button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
         <div className="mb-10 flex items-center justify-between">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-[#E8C673] tracking-widest font-serif uppercase flex items-center gap-3">
@@ -158,7 +286,7 @@ export default function PlantDashboard() {
           </div>
         </div>
 
-        {/* Rejilla de Tarjetas (Cards) de las Máquinas */}
+        {/* Visualización agrupada por línea/grupo */}
         {displayPLCs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 mt-10 border-[2px] border-dashed border-[#69523C] bg-black/40 backdrop-blur-sm"
                style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}>
@@ -167,92 +295,143 @@ export default function PlantDashboard() {
             <p className="text-[#CBB596] text-sm mt-2 font-medium text-center">Todavía no hay conexiones físicas con equipos industriales.<br/>Solo los usuarios administradores pueden visualizar la maqueta de simulación.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayPLCs.map((plc) => {
-              const data = liveData[plc.id];
-              const isOnline = plc.status === 'online';
-
-            return (
-              <div key={plc.id} className="relative group">
-                <div 
-                  className={`w-full h-full bg-[#E5DBCA]/95 backdrop-blur-md border-[3px] ${isOnline ? 'border-[#69523C]' : 'border-red-900/40 bg-red-950/20 text-white/50'} p-6 flex flex-col shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-all duration-500 hover:-translate-y-2`}
-                  style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}
-                >
-                  {/* Adornos Modulares Esquinas */}
-                  <div className="absolute top-1 left-1 w-4 h-4 border-t-[3px] border-l-[3px] border-[#A3855B] z-10 pointer-events-none"></div>
-                  <div className="absolute top-1 right-1 w-4 h-4 border-t-[3px] border-r-[3px] border-[#A3855B] z-10 pointer-events-none"></div>
-                  <div className="absolute bottom-1 left-1 w-4 h-4 border-b-[3px] border-l-[3px] border-[#A3855B] z-10 pointer-events-none"></div>
-                  <div className="absolute bottom-1 right-1 w-4 h-4 border-b-[3px] border-r-[3px] border-[#A3855B] z-10 pointer-events-none"></div>
-
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="pr-4">
-                      <h3 className={`font-bold font-serif uppercase tracking-wider text-lg leading-tight ${isOnline ? 'text-[#312011]' : 'text-red-400 opacity-70'}`}>
-                        {plc.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#FCFAEA] ${isOnline ? 'bg-[#A3855B]' : 'bg-red-900'}`}>
-                          {plc.brand}
-                        </span>
-                        <p className="text-xs font-mono font-bold text-[#69523C]">{plc.ip}</p>
-                      </div>
-                    </div>
-                    {/* Foco Titilante Verde/Rojo */}
-                    <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
-                  </div>
-
-                  {isOnline && data ? (
-                    <div className="grid grid-cols-2 gap-4 mt-2 mb-6">
-                      {!plc.io_config || plc.io_config.length === 0 ? (
-                        <div className="col-span-2 flex items-center justify-center p-3 text-[#CBB596] text-[10px] tracking-widest uppercase font-bold border-2 border-dashed border-[#69523C]/50 opacity-80 h-[80px]">
-                          Sin Variables Configuradas
-                        </div>
-                      ) : (
-                        plc.io_config.slice(0, 4).map((tag: any) => {
-                          const val = data[tag.name];
-                          const isBool = typeof val === 'boolean' || tag.type === 'Bool';
-                          const displayVal = isBool ? (val ? 'ON' : 'OFF') : (typeof val === 'number' ? val.toFixed(1) : String(val ?? 0));
-                          
-                          return (
-                            <div key={tag.name} className="bg-[#F2EADA] border-[2px] border-[#CBB596] p-3 shadow-inner flex flex-col items-center justify-center text-center overflow-hidden">
-                              <span className="text-[10px] uppercase font-bold text-[#69523C] mb-1 tracking-widest truncate w-full">{tag.name}</span>
-                              <span className={`text-xl font-black ${isBool ? (val ? 'text-green-700' : 'text-gray-500') : 'text-[#312011]'}`}>
-                                {displayVal}
-                              </span>
+          <div className="space-y-10">
+            {/* Mostrar PLCs agrupados por grupo/linea */}
+            {groups.map(group => {
+              const plcsInGroup = displayPLCs.filter(plc => plc.group_id === group.id);
+              if (plcsInGroup.length === 0) return null;
+              return (
+                <div key={group.id}>
+                  <h3 className="text-lg font-bold text-[#E8C673] mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2h5" /></svg>
+                    {group.name}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {plcsInGroup.map((plc) => {
+                      const data = liveData[plc.id];
+                      const isOnline = plc.status === 'online';
+                      return (
+                        <div key={plc.id} className="relative group">
+                          {/* ...existing code for PLC card... */}
+                          <div 
+                            className={`w-full h-full bg-[#E5DBCA]/95 backdrop-blur-md border-[3px] ${isOnline ? 'border-[#69523C]' : 'border-red-900/40 bg-red-950/20 text-white/50'} p-6 flex flex-col shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-all duration-500 hover:-translate-y-2`}
+                            style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}
+                          >
+                            {/* Selector de grupo/linea y botón eliminar PLC */}
+                            <div className="mb-2 flex items-center gap-2">
+                              <select
+                                className="px-2 py-1 rounded border border-gray-400 text-xs bg-[#222] text-white"
+                                value={plc.group_id || ''}
+                                onChange={e => handleAssignGroup(plc.id, e.target.value)}
+                              >
+                                <option value="">Sin Grupo</option>
+                                {groups.map(g => (
+                                  <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                              </select>
+                              <button
+                                className="ml-2 px-2 py-1 rounded bg-red-700 text-white text-xs hover:bg-red-800 transition-all"
+                                onClick={() => handleDeletePLC(plc.id)}
+                                title="Eliminar PLC"
+                              >Eliminar</button>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-[90px] mt-2 mb-6 bg-black/60 border-[2px] border-red-900/50 shadow-inner">
-                        <div className="flex flex-col items-center">
-                          <svg className="w-6 h-6 text-red-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                          <span className="text-red-500 font-bold uppercase tracking-widest text-[10px]">Pérdida de Enlace</span>
+                            <div className="mb-2 flex items-center gap-2">
+                              <select
+                                className="px-2 py-1 rounded border border-gray-400 text-xs bg-[#222] text-white"
+                                value={plc.group_id || ''}
+                                onChange={e => handleAssignGroup(plc.id, e.target.value)}
+                              >
+                                <option value="">Sin Grupo</option>
+                                {groups.map(g => (
+                                  <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {/* ...existing code... */}
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="pr-4">
+                                <h3 className={`font-bold font-serif uppercase tracking-wider text-lg leading-tight ${isOnline ? 'text-[#312011]' : 'text-red-400 opacity-70'}`}>
+                                  {plc.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#FCFAEA] ${isOnline ? 'bg-[#A3855B]' : 'bg-red-900'}`}>
+                                    {plc.brand}
+                                  </span>
+                                  <p className="text-xs font-mono font-bold text-[#69523C]">{plc.ip}</p>
+                                </div>
+                              </div>
+                              {/* Foco Titilante Verde/Rojo */}
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                            </div>
+                            {/* ...existing code... */}
+                          </div>
                         </div>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={() => router.push(`/planta/${plc.brand}?id=${plc.id}`)}
-                    className={`mt-auto w-full py-3 font-bold text-[12px] uppercase tracking-[0.2em] transition-all border-b-[4px] border-r-[4px] shadow-sm relative overflow-hidden group/btn
-                      ${isOnline 
-                        ? 'bg-[#121927] text-[#E8C673] border-[#E8C673]/60 hover:bg-[#1A2624] hover:text-[#FBE7A1] hover:border-[#E8C673]' 
-                        : 'bg-red-950/80 text-red-400 border-red-900 cursor-not-allowed opacity-80 hover:bg-red-950 hover:text-red-300'}`}
-                    style={{ clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))' }}
-                    disabled={!isOnline}
-                  >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                       {isOnline ? 'Intervenir' : 'Ofrenda Caída'}
-                       {isOnline && <svg className="w-4 h-4 translate-y-[-1px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
-                    </span>
-                    {isOnline && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E8C673] to-transparent opacity-0 group-hover/btn:opacity-20 transition-opacity duration-500 blur-sm z-0"></div>}
-                  </button>
-
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+            {/* Mostrar PLCs sin grupo */}
+            {(() => {
+              const plcsNoGroup = displayPLCs.filter(plc => !plc.group_id);
+              if (plcsNoGroup.length === 0) return null;
+              return (
+                <div>
+                  <h3 className="text-lg font-bold text-[#E8C673] mb-3 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    Sin Grupo
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {plcsNoGroup.map((plc) => {
+                      const data = liveData[plc.id];
+                      const isOnline = plc.status === 'online';
+                      return (
+                        <div key={plc.id} className="relative group">
+                          {/* ...existing code for PLC card... */}
+                          <div 
+                            className={`w-full h-full bg-[#E5DBCA]/95 backdrop-blur-md border-[3px] ${isOnline ? 'border-[#69523C]' : 'border-red-900/40 bg-red-950/20 text-white/50'} p-6 flex flex-col shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-all duration-500 hover:-translate-y-2`}
+                            style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}
+                          >
+                            {/* Selector de grupo/linea */}
+                            <div className="mb-2 flex items-center gap-2">
+                              <select
+                                className="px-2 py-1 rounded border border-gray-400 text-xs bg-[#222] text-white"
+                                value={plc.group_id || ''}
+                                onChange={e => handleAssignGroup(plc.id, e.target.value)}
+                              >
+                                <option value="">Sin Grupo</option>
+                                {groups.map(g => (
+                                  <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {/* ...existing code... */}
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="pr-4">
+                                <h3 className={`font-bold font-serif uppercase tracking-wider text-lg leading-tight ${isOnline ? 'text-[#312011]' : 'text-red-400 opacity-70'}`}>
+                                  {plc.name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#FCFAEA] ${isOnline ? 'bg-[#A3855B]' : 'bg-red-900'}`}>
+                                    {plc.brand}
+                                  </span>
+                                  <p className="text-xs font-mono font-bold text-[#69523C]">{plc.ip}</p>
+                                </div>
+                              </div>
+                              {/* Foco Titilante Verde/Rojo */}
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                            </div>
+                            {/* ...existing code... */}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         )}
       {/* --- REGISTRO DE ALERTAS Y ANOMALÍAS --- */}
       <section className="mt-16">
