@@ -15,37 +15,54 @@ export default function PlantDashboard() {
     const [groupName, setGroupName] = useState('');
     const [editingGroup, setEditingGroup] = useState<any>(null);
     const [groupLoading, setGroupLoading] = useState(false);
+    const [groupError, setGroupError] = useState<string | null>(null);
 
     // Obtener grupos del usuario
     useEffect(() => {
+      if (!userId) return;
       const fetchGroups = async () => {
         setGroupLoading(true);
         const { data, error } = await supabase
           .from('plc_groups')
           .select('*')
+          .eq('user_id', userId)
           .order('created_at', { ascending: true });
         if (!error && data) setGroups(data);
         setGroupLoading(false);
       };
       fetchGroups();
-    }, []);
+    }, [userId]);
 
     // Crear o editar grupo
     const handleSaveGroup = async (e: any) => {
       e.preventDefault();
+      setGroupError(null);
       setGroupLoading(true);
-      if (editingGroup) {
-        // Editar
-        await supabase.from('plc_groups').update({ name: groupName }).eq('id', editingGroup.id);
-      } else {
-        // Crear
-        await supabase.from('plc_groups').insert([{ name: groupName }]);
+      try {
+        if (editingGroup) {
+          // Editar
+          const { error } = await supabase.from('plc_groups').update({ name: groupName }).eq('id', editingGroup.id);
+          if (error) setGroupError(error.message);
+        } else {
+          // Crear
+          if (!userId) {
+            setGroupError('No hay usuario autenticado.');
+            setGroupLoading(false);
+            return;
+          }
+          const { error } = await supabase.from('plc_groups').insert([{ name: groupName, user_id: userId }]);
+          if (error) setGroupError(error.message);
+        }
+        setGroupName('');
+        setEditingGroup(null);
+        // Refrescar
+        if (userId) {
+          const { data } = await supabase.from('plc_groups').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+          setGroups(data || []);
+        }
+      } catch (err: any) {
+        setGroupError(err.message || 'Error desconocido');
       }
-      setGroupName('');
-      setEditingGroup(null);
-      // Refrescar
-      const { data } = await supabase.from('plc_groups').select('*').order('created_at', { ascending: true });
-      setGroups(data || []);
       setGroupLoading(false);
     };
 
@@ -54,8 +71,10 @@ export default function PlantDashboard() {
       if (!confirm('¿Eliminar este grupo/linea?')) return;
       setGroupLoading(true);
       await supabase.from('plc_groups').delete().eq('id', id);
-      const { data } = await supabase.from('plc_groups').select('*').order('created_at', { ascending: true });
-      setGroups(data || []);
+      if (userId) {
+        const { data } = await supabase.from('plc_groups').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+        setGroups(data || []);
+      }
       setGroupLoading(false);
     };
   const router = useRouter();
@@ -146,9 +165,15 @@ export default function PlantDashboard() {
   }, [userPLCs]); // Se depende de que ya estén cargados los PLCs desde Supabase para iniciar
 
   // Permitir asignar PLCs a grupos/lineas
+  const [plcError, setPlcError] = useState<string | null>(null);
   const handleAssignGroup = async (plcId: string, groupId: string) => {
+    setPlcError(null);
     if (!userId) return;
-    await supabase.from('plcs').update({ group_id: groupId }).eq('id', plcId);
+    const { error } = await supabase.from('plcs').update({ group_id: groupId }).eq('id', plcId);
+    if (error) {
+      setPlcError(error.message);
+      return;
+    }
     // Refrescar PLCs
     const { data: plcs } = await supabase
       .from('plcs')
@@ -226,6 +251,11 @@ export default function PlantDashboard() {
       <main className="relative z-10 flex-1 p-6 md:p-10 mx-auto w-full max-w-7xl">
         {/* Panel de gestión de grupos/lineas */}
         <section className="mb-10">
+          {groupError && (
+            <div className="mb-2 p-2 bg-red-900 text-red-200 rounded border border-red-700 font-bold">
+              Error: {groupError}
+            </div>
+          )}
           <h2 className="text-xl font-bold text-[#E8C673] mb-2 flex items-center gap-2">
             <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2h5" /></svg>
             Líneas / Grupos de Producción
@@ -289,6 +319,12 @@ export default function PlantDashboard() {
           </div>
         </div>
 
+        {/* Mensaje de error al asignar grupo a PLC */}
+        {plcError && (
+          <div className="mb-4 p-2 bg-red-900 text-red-200 rounded border border-red-700 font-bold">
+            Error al asignar grupo: {plcError}
+          </div>
+        )}
         {/* Visualización agrupada por línea/grupo */}
         {displayPLCs.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 mt-10 border-[2px] border-dashed border-[#69523C] bg-black/40 backdrop-blur-sm"
