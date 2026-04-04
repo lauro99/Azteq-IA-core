@@ -391,15 +391,15 @@ export default function Home() {
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Respuestas Técnicas Precisas:</strong> Respaldada exclusivamente por la documentación oficial y diagramas del fabricante (PDF/TXT), garantizando cero alucinaciones en sus indicaciones.</span>
+                  <span><strong>Zero Alucinaciones:</strong> Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Optimización de OEE:</strong> Minimiza hasta en un 40% el tiempo de diagnóstico y resolución de fallas en piso, impactando directamente la métrica de Disponibilidad Pura.</span>
+                  <span><strong>Dispara tu OEE (Downtime Killer):</strong> Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Motor Matemático Integrado:</strong> Procesamiento exacto de fórmulas complejas y parámetros de calibración usando KaTeX, adaptado a ingeniería de control.</span>
+                  <span><strong>Experto Matemático Integrado:</strong> Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.</span>
                 </li>
               </ul>
             </div>
@@ -427,15 +427,15 @@ export default function Home() {
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Driver Agnóstico Integrado:</strong> Telemetría nativa para protocolos estándar como Siemens S7, Modbus-TCP y Ethernet/IP en una única infraestructura.</span>
+                  <span><strong>Conecta con Cualquier PLC:</strong> Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Arquitectura Escalable:</strong> Capacidad de expansión desde una celda robótica aislada hasta la gestión concurrente de flotas multimarca a nivel planta.</span>
+                  <span><strong>Crece a tu Ritmo:</strong> Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Dashboard Operativo en Tiempo Real:</strong> Visibilidad gerencial e instantánea de KPIs críticos (presión, temperaturas, ciclos) accesible desde cualquier dispositivo conectado.</span>
+                  <span><strong>Tu Planta en tu Bolsillo:</strong> Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.</span>
                 </li>
               </ul>
             </div>
