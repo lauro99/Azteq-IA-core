@@ -1,6 +1,8 @@
-﻿import { NextResponse } from 'next/server';
+﻿
+import { NextResponse } from 'next/server';
 // @ts-ignore
 import nodes7 from 'nodes7';
+import { supabase } from './supabase';
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +10,18 @@ export async function POST(request: Request) {
     const { brand, ip, port, rack, slot, isCloud, mockMode, ioTags } = body;
 
     if (!ip) {
+      // Log error in Supabase
+      await supabase.from('plc_errors').insert([
+        {
+          user_id: body.user_id || null,
+          plc_id: body.plc_id || null,
+          equip: brand || 'Desconocido',
+          code: 'ERR-NOIP',
+          desc: 'Falta la dirección IP del PLC',
+          severity: 'Crítico',
+          resolved: false
+        }
+      ]);
       return NextResponse.json({ success: false, error: 'Falta la dirección IP del PLC' }, { status: 400 });
     }
 
@@ -66,6 +80,18 @@ export async function POST(request: Request) {
 
         conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
           if (typeof err !== 'undefined') {
+            // Log connection error
+            supabase.from('plc_errors').insert([
+              {
+                user_id: body.user_id || null,
+                plc_id: body.plc_id || null,
+                equip: brand || 'Desconocido',
+                code: 'ERR-CONN',
+                desc: `Error de conexión en puerto industrial ${ip}: ${err}`,
+                severity: 'Crítico',
+                resolved: false
+              }
+            ]);
             return resolve(NextResponse.json({ 
               success: false, 
               error: `Error de conexión en puerto industrial ${ip}: ` + err 
@@ -97,11 +123,30 @@ export async function POST(request: Request) {
             conn.dropConnection();
 
             if (readErr) {
+              // Log read error
+              supabase.from('plc_errors').insert([
+                {
+                  user_id: body.user_id || null,
+                  plc_id: body.plc_id || null,
+                  equip: brand || 'Desconocido',
+                  code: 'ERR-READ',
+                  desc: 'Error leyendo bus de datos: ' + readErr,
+                  severity: 'Crítico',
+                  resolved: false
+                }
+              ]);
               return resolve(NextResponse.json({
                 success: false,
                 error: 'Error leyendo bus de datos: ' + readErr
               }, { status: 500 }));
             }
+
+            // On success, mark all unresolved errors for this PLC as resolved
+            supabase.from('plc_errors')
+              .update({ resolved: true })
+              .eq('plc_id', body.plc_id || null)
+              .eq('resolved', false)
+              .lte('time', new Date().toISOString());
 
             let finalData: any = { estatusGeneral: 'OPERATIVO' };
             if (ioTags && ioTags.length > 0) {
@@ -163,6 +208,18 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
+    // Log server exception
+    supabase.from('plc_errors').insert([
+      {
+        user_id: null,
+        plc_id: null,
+        equip: 'Servidor',
+        code: 'ERR-EXC',
+        desc: 'Excepción de Servidor: ' + error.message,
+        severity: 'Crítico',
+        resolved: false
+      }
+    ]);
     return NextResponse.json({ success: false, error: 'Excepción de Servidor: ' + error.message }, { status: 500 });
   }
 }

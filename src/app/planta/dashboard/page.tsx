@@ -98,41 +98,22 @@ export default function PlantDashboard() {
   const displayPLCs = userPLCs; // Ahora ya TODOS (Admin o no) ven las reliquias guardadas, pero las verdaderas obtenidas desde su cuenta
 
 
-  // Mocked recent PLC errors/alerts
-  const recentErrors = [
-    {
-      id: 1,
-      time: "10:45 AM",
-      equip: "Robot Soldadura",
-      code: "ERR-404",
-      desc: "Pérdida de paquetes Modbus",
-      severity: "Crítico"
-    },
-    {
-      id: 2,
-      time: "10:41 AM",
-      equip: "PLC Embalaje",
-      code: "WARN-201",
-      desc: "Latencia elevada en red EtherNet/IP",
-      severity: "Advertencia"
-    },
-    {
-      id: 3,
-      time: "10:39 AM",
-      equip: "Cinta Transportadora",
-      code: "RES-102",
-      desc: "Sensor de límite restablecido",
-      severity: "Resuelto"
-    },
-    {
-      id: 4,
-      time: "10:35 AM",
-      equip: "Horno Industrial",
-      code: "ERR-500",
-      desc: "Fallo de comunicación Profibus",
-      severity: "Crítico"
-    }
-  ];
+  // Real PLC errors/alerts from Supabase
+  const [recentErrors, setRecentErrors] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchErrors = async () => {
+      const { data, error } = await supabase
+        .from('plc_errors')
+        .select('*')
+        .order('time', { ascending: false })
+        .gte('time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Últimos 7 días
+      if (!error && data) setRecentErrors(data);
+    };
+    fetchErrors();
+    const interval = setInterval(fetchErrors, 5000); // Refresca cada 5s
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -286,6 +267,27 @@ export default function PlantDashboard() {
             <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             <h2 className="text-lg md:text-xl font-bold font-serif uppercase tracking-widest text-[#E8C673]">Registro de Alertas y Anomalías</h2>
           </div>
+          {isAdmin && (
+            <div className="flex justify-end px-6 py-2 bg-black/20">
+              <button
+                onClick={async () => {
+                  if (confirm('¿Seguro que deseas borrar todos los errores? Esta acción no se puede deshacer.')) {
+                    await supabase.from('plc_errors').delete().neq('id', 0);
+                    // Refresca la lista de errores
+                    const { data, error } = await supabase
+                      .from('plc_errors')
+                      .select('*')
+                      .order('time', { ascending: false })
+                      .gte('time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+                    if (!error && data) setRecentErrors(data);
+                  }
+                }}
+                className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded shadow transition-all"
+              >
+                Borrar todos los errores
+              </button>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left">
               <thead className="bg-[#1A2624] text-[#E8C673] uppercase text-xs border-b border-[#E8C673]/20">
@@ -300,17 +302,17 @@ export default function PlantDashboard() {
               <tbody>
                 {recentErrors.map((err) => {
                   let sevColor = '';
-                  if (err.severity === 'Crítico') sevColor = 'text-red-400 border-l-4 border-red-400 bg-red-950/10';
-                  else if (err.severity === 'Advertencia') sevColor = 'text-yellow-400 border-l-4 border-yellow-400 bg-yellow-900/10';
-                  else if (err.severity === 'Resuelto') sevColor = 'text-green-400 border-l-4 border-green-400 bg-green-900/10';
+                  if (!err.resolved && err.severity === 'Crítico') sevColor = 'text-red-400 border-l-4 border-red-400 bg-red-950/10';
+                  else if (!err.resolved && err.severity === 'Advertencia') sevColor = 'text-yellow-400 border-l-4 border-yellow-400 bg-yellow-900/10';
+                  else if (err.resolved) sevColor = 'text-green-400 border-l-4 border-green-400 bg-green-900/10';
                   else sevColor = 'text-white';
                   return (
                     <tr key={err.id} className={`transition-colors duration-200 ${sevColor}`}>
-                      <td className="py-2 px-4 whitespace-nowrap font-mono">{err.time}</td>
+                      <td className="py-2 px-4 whitespace-nowrap font-mono">{new Date(err.time).toLocaleString()}</td>
                       <td className="py-2 px-4 whitespace-nowrap">{err.equip}</td>
                       <td className="py-2 px-4 font-bold">{err.code}</td>
                       <td className="py-2 px-4">{err.desc}</td>
-                      <td className="py-2 px-4 font-bold uppercase">{err.severity}</td>
+                      <td className="py-2 px-4 font-bold uppercase">{err.resolved ? 'Resuelto' : err.severity}</td>
                     </tr>
                   );
                 })}
