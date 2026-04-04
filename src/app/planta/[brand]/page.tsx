@@ -427,7 +427,7 @@ function PlcDashboardContent() {
                     Tipo Dato
                     <span title="Las dimensiones y formato de los datos que extraes" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
-                  <div className="col-span-1 text-right pr-2">Del</div>
+                  <div className="col-span-1 text-right pr-2">Acción</div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 max-h-[30vh] overflow-y-auto pr-2">
@@ -444,11 +444,23 @@ function PlcDashboardContent() {
                         <div className="col-span-3 font-mono text-[#4ade80] text-xs uppercase hover:text-white transition-colors cursor-help" title={`Dirección en PLC: ${tag.address}`}>{tag.address}</div>
                         <div className="col-span-1 font-mono text-[#A3855B] text-xs">{tag.unit || '-'}</div>
                         <div className="col-span-2 text-[#E8C673] text-xs font-bold uppercase">{tag.type}</div>
-                        <div className="col-span-1 text-right pr-1">
+                        <div className="col-span-1 flex gap-3 justify-end items-center pr-1">
+                          <button
+                            onClick={() => {
+                              setNewTag({ group: tag.group || '', name: tag.name, address: tag.address, type: tag.type, unit: tag.unit || '' });
+                              setIoTags(ioTags.filter(t => t.id !== tag.id));
+                            }}
+                            className="text-[#E8C673] opacity-50 group-hover:opacity-100 hover:text-[#D4AF37] hover:scale-110 transition-all text-lg leading-none"
+                            aria-label={`Editar ${tag.name}`}
+                            title="Editar"
+                          >
+                            ✎
+                          </button>
                           <button 
                             onClick={() => setIoTags(ioTags.filter(t => t.id !== tag.id))}
                             className="text-red-400 opacity-50 group-hover:opacity-100 hover:text-red-300 hover:scale-110 font-bold transition-all text-lg leading-none"
                             aria-label={`Eliminar ${tag.name}`}
+                            title="Eliminar"
                           >
                             ×
                           </button>

@@ -97,6 +97,43 @@ export default function PlantDashboard() {
 
   const displayPLCs = userPLCs; // Ahora ya TODOS (Admin o no) ven las reliquias guardadas, pero las verdaderas obtenidas desde su cuenta
 
+
+  // Mocked recent PLC errors/alerts
+  const recentErrors = [
+    {
+      id: 1,
+      time: "10:45 AM",
+      equip: "Robot Soldadura",
+      code: "ERR-404",
+      desc: "Pérdida de paquetes Modbus",
+      severity: "Crítico"
+    },
+    {
+      id: 2,
+      time: "10:41 AM",
+      equip: "PLC Embalaje",
+      code: "WARN-201",
+      desc: "Latencia elevada en red EtherNet/IP",
+      severity: "Advertencia"
+    },
+    {
+      id: 3,
+      time: "10:39 AM",
+      equip: "Cinta Transportadora",
+      code: "RES-102",
+      desc: "Sensor de límite restablecido",
+      severity: "Resuelto"
+    },
+    {
+      id: 4,
+      time: "10:35 AM",
+      equip: "Horno Industrial",
+      code: "ERR-500",
+      desc: "Fallo de comunicación Profibus",
+      severity: "Crítico"
+    }
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#111] flex items-center justify-center">
@@ -236,7 +273,54 @@ export default function PlantDashboard() {
           })}
         </div>
         )}
-      </main>
-    </div>
+      {/* --- REGISTRO DE ALERTAS Y ANOMALÍAS --- */}
+      <section className="mt-16">
+        <div
+          className="border border-[#E8C673]/30 bg-[#1A2624]/60 rounded-xl shadow-lg overflow-hidden"
+          style={{
+            clipPath:
+              'polygon(20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px)'
+          }}
+        >
+          <div className="px-6 py-4 border-b border-[#E8C673]/20 bg-black/30 flex items-center gap-3">
+            <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <h2 className="text-lg md:text-xl font-bold font-serif uppercase tracking-widest text-[#E8C673]">Registro de Alertas y Anomalías</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-[#1A2624] text-[#E8C673] uppercase text-xs border-b border-[#E8C673]/20">
+                <tr>
+                  <th className="py-3 px-4 font-bold">Hora</th>
+                  <th className="py-3 px-4 font-bold">Equipo/Nodo</th>
+                  <th className="py-3 px-4 font-bold">Código</th>
+                  <th className="py-3 px-4 font-bold">Descripción</th>
+                  <th className="py-3 px-4 font-bold">Severidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentErrors.map((err) => {
+                  let sevColor = '';
+                  if (err.severity === 'Crítico') sevColor = 'text-red-400 border-l-4 border-red-400 bg-red-950/10';
+                  else if (err.severity === 'Advertencia') sevColor = 'text-yellow-400 border-l-4 border-yellow-400 bg-yellow-900/10';
+                  else if (err.severity === 'Resuelto') sevColor = 'text-green-400 border-l-4 border-green-400 bg-green-900/10';
+                  else sevColor = 'text-white';
+                  return (
+                    <tr key={err.id} className={`transition-colors duration-200 ${sevColor}`}>
+                      <td className="py-2 px-4 whitespace-nowrap font-mono">{err.time}</td>
+                      <td className="py-2 px-4 whitespace-nowrap">{err.equip}</td>
+                      <td className="py-2 px-4 font-bold">{err.code}</td>
+                      <td className="py-2 px-4">{err.desc}</td>
+                      <td className="py-2 px-4 font-bold uppercase">{err.severity}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
   );
 }
