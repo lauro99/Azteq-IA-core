@@ -8,8 +8,10 @@ import LanguageSelector from '@/components/LanguageSelector';
 
 
 export default function PlantDashboard() {
-      // Estado para userId
-      const [userId, setUserId] = useState<string | null>(null);
+  // Estado para mostrar/ocultar variables por PLC
+  const [showVars, setShowVars] = useState<Record<string, boolean>>({});
+  // Estado para userId
+  const [userId, setUserId] = useState<string | null>(null);
     // Grupos/Lineas de producción
     const [groups, setGroups] = useState<any[]>([]);
     const [groupName, setGroupName] = useState('');
@@ -391,6 +393,42 @@ export default function PlantDashboard() {
                               <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
                             </div>
                             {/* ...existing code... */}
+                            {/* Visualización profesional de variables */}
+                            <div className="mt-2">
+                              <button
+                                className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
+                                onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
+                              >
+                                {showVars[plc.id] ? 'Ocultar Variables' : 'Ver Variables'}
+                              </button>
+                              {showVars[plc.id] && (
+                                <div>
+                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">Variables</h4>
+                                  {data && Object.keys(data).length > 0 ? (
+                                    <div className="max-h-40 overflow-y-auto rounded border border-[#CBB596]/30 bg-white/80 shadow-inner">
+                                      <table className="min-w-full text-xs text-left">
+                                        <thead className="bg-[#F5E9D0] sticky top-0 z-10">
+                                          <tr>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Nombre</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Valor</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {Object.entries(data).map(([varName, varValue]) => (
+                                            <tr key={varName} className="border-b last:border-b-0 border-[#E8C673]/10 hover:bg-[#F5E9D0]/60 transition-colors">
+                                              <td className="py-1 px-2 font-mono text-[#312011] break-all">{varName}</td>
+                                              <td className="py-1 px-2 font-mono text-[#69523C] text-right">{typeof varValue === 'object' ? JSON.stringify(varValue) : String(varValue)}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -416,7 +454,7 @@ export default function PlantDashboard() {
                       return (
                         <div key={plc.id} className="relative group">
                           {/* ...existing code for PLC card... */}
-                          <div 
+                          <div
                             className={`w-full h-full bg-[#E5DBCA]/95 backdrop-blur-md border-[3px] ${isOnline ? 'border-[#69523C]' : 'border-red-900/40 bg-red-950/20 text-white/50'} p-6 flex flex-col shadow-[0_15px_30px_rgba(0,0,0,0.6)] transition-all duration-500 hover:-translate-y-2`}
                             style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}
                           >
@@ -433,7 +471,6 @@ export default function PlantDashboard() {
                                 ))}
                               </select>
                             </div>
-                            {/* ...existing code... */}
                             <div className="flex justify-between items-start mb-4">
                               <div className="pr-4">
                                 <h3 className={`font-bold font-serif uppercase tracking-wider text-lg leading-tight ${isOnline ? 'text-[#312011]' : 'text-red-400 opacity-70'}`}>
@@ -449,7 +486,42 @@ export default function PlantDashboard() {
                               {/* Foco Titilante Verde/Rojo */}
                               <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
                             </div>
-                            {/* ...existing code... */}
+                            {/* Visualización profesional de variables */}
+                            <div className="mt-2">
+                              <button
+                                className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
+                                onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
+                              >
+                                {showVars[plc.id] ? 'Ocultar Variables' : 'Ver Variables'}
+                              </button>
+                              {showVars[plc.id] && (
+                                <div>
+                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">Variables</h4>
+                                  {data && Object.keys(data).length > 0 ? (
+                                    <div className="max-h-40 overflow-y-auto rounded border border-[#CBB596]/30 bg-white/80 shadow-inner">
+                                      <table className="min-w-full text-xs text-left">
+                                        <thead className="bg-[#F5E9D0] sticky top-0 z-10">
+                                          <tr>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Nombre</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Valor</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {Object.entries(data).map(([varName, varValue]) => (
+                                            <tr key={varName} className="border-b last:border-b-0 border-[#E8C673]/10 hover:bg-[#F5E9D0]/60 transition-colors">
+                                              <td className="py-1 px-2 font-mono text-[#312011] break-all">{varName}</td>
+                                              <td className="py-1 px-2 font-mono text-[#69523C] text-right">{typeof varValue === 'object' ? JSON.stringify(varValue) : String(varValue)}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
