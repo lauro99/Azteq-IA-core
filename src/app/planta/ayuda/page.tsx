@@ -68,7 +68,7 @@ export default function AyudaConexionPlanta() {
               </p>
               <ul className="list-disc list-inside text-gray-400 space-y-2 ml-4">
                 <li><strong className="text-white">ID Memoria (Address):</strong> La dirección física en el PLC (ej. DB1,X0.0 o 40001).</li>
-                <li><strong className="text-white">Tipo de Dato:</strong> Si es un Bit (ON/OFF), un Entero (número), etc.</li>
+                <li><strong className="text-white">Tipo de Dato y Unidad:</strong> Si es un Bit (ON/OFF), un Entero (número), etc. Para números, ingresa su unidad de medida (ej. °C, PSI, bar). Para la casilla de Unidad en tipos booleanos (Bits), puedes usar textos que representen sus estados como "(ON/OFF)", "Abierto/Cerrado" o dejarlo en blanco.</li>
                 <li><strong className="text-white">Descripción Semántica:</strong> Esto es <span className="text-[#E8C673] font-semibold">crucial</span>. La IA no sabe qué es "M0.0". Debes decirle: <em>"Bomba Principal de Enfriamiento"</em>.</li>
               </ul>
             </section>

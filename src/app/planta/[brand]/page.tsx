@@ -310,7 +310,7 @@ function PlcDashboardContent() {
                         <li><strong className="text-white">Modbus (Delta/Keyence):</strong> Usa los registros clásicos (ej. 40001, 40002).</li>
                       </ul>
                     </li>
-                    <li><strong>Tipo de Dato:</strong> Selecciona si es una simple alerta visual encendido/apagado (<strong>Sí/No</strong>), si tiene punto decimal (<strong>Decimales</strong>) o son números redondos (<strong>Enteros</strong>).</li>
+                      <li><strong>Tipo de Dato y Unidad:</strong> Selecciona si es una simple alerta visual encendido/apagado (<strong>Sí/No</strong>), si tiene punto decimal (<strong>Decimales</strong>) o son números redondos (<strong>Enteros</strong>). Escribe la unidad de medida según corresponda (ej. "°C", "PSI", "kg", "RPM"). Para tipos <strong>Sí/No (Bool)</strong>, puedes dejar la unidad en blanco o usar textos descriptivos como "(ON/OFF)", "Activo/Inactivo" o "Abierto".</li>
                   </ul>
                 </div>
               )}
@@ -319,7 +319,7 @@ function PlcDashboardContent() {
               <div className="bg-black/40 border border-[#E8C673]/30 p-4 relative" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
                 <h4 className="text-[#CBB596] text-xs font-bold uppercase tracking-widest mb-3">Vincular Nueva Señal del PLC</h4>
                 <div className="flex flex-col md:flex-row gap-3">
-                  <div className="w-full md:w-1/5 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
                       placeholder="Área del Equipo (ej. Empacadora)"
@@ -331,7 +331,7 @@ function PlcDashboardContent() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/5 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
                       placeholder="¿Qué estamos leyendo? (ej. Temp_Horno)"
@@ -343,7 +343,7 @@ function PlcDashboardContent() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/5 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
                       placeholder="Dirección del PLC (ej. M0.0, 40001)"
@@ -356,7 +356,7 @@ function PlcDashboardContent() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/5 relative group">
+                  <div className="flex-1 min-w-0 w-full relative group">
                     <input
                       type="text"
                       placeholder="Unidad (ej. °C, kg, bar)"
@@ -364,11 +364,11 @@ function PlcDashboardContent() {
                       onChange={(e) => setNewTag({...newTag, unit: e.target.value})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-bold"
                     />
-                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Unidad de medida para mostrar en el dashboard (ej. bar, °C, RPM, kg).">
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Unidad de medida para mostrar en el dashboard (ej. bar, °C, RPM, kg). Para tipos Bool puedes usar (ON/OFF), Activo/Inactivo, o blanco.">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
                     </div>
                   </div>
-                  <div className="w-full md:w-1/5 relative flex gap-2">
+                  <div className="flex-1 min-w-0 w-full relative flex gap-2">
                     <div className="relative flex-1 group">
                       <select
                         value={newTag.type}
@@ -396,7 +396,7 @@ function PlcDashboardContent() {
                           setNewTag({ group: newTag.group, name: '', address: '', type: 'Bool', unit: '' }); // Mantiene el grupo para agilidad
                         }
                       }}
-                      className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-4 py-2 font-bold tracking-widest text-sm transition-all shadow-[2px_2px_0_0_rgba(163,133,91,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                      className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-4 py-2 font-bold tracking-widest text-sm transition-all shadow-[2px_2px_0_0_rgba(163,133,91,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] shrink-0 md:w-12 flex items-center justify-center"
                       style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}
                     >
                       +
