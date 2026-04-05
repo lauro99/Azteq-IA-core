@@ -40,7 +40,7 @@ function PlcDashboardContent() {
   // Lista dinámica de PLCs desde Supabase y nuevo nombre
   const [savedPLCs, setSavedPLCs] = useState<any[]>([{ id: '', name: '-- Seleccionar Equipo Guardado --', ip: '', port: '102', rack: '0', slot: '1', is_cloud: false }]);
   const [newPlcName, setNewPlcName] = useState('');
-  const [plcModel, setPlcModel] = useState('standard');
+  const [plcModel, setPlcModel] = useState(brandId === 'siemens' ? 's7-1200' : 'standard');
 
   // Configuración de E/S
   const [showConfigurator, setShowConfigurator] = useState(false);
@@ -52,7 +52,17 @@ function PlcDashboardContent() {
   const [ipAddress, setIpAddress] = useState('');
   const [port, setPort] = useState('102'); // Default common port for PLCs like S7
   const [rack, setRack] = useState('0');
-  const [slot, setSlot] = useState('1');
+  const [slot, setSlot] = useState(brandId === 'siemens' ? '0' : '1');
+
+  useEffect(() => {
+    if (brandId === 'siemens') {
+      if (plcModel === 's7-1200' || plcModel === 's7-1500' || plcModel === 'logo') {
+        setSlot('0');
+      } else if (plcModel === 's7-300') {
+        setSlot('2');
+      }
+    }
+  }, [brandId, plcModel]);
 
   const handlePlcSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
@@ -164,6 +174,7 @@ function PlcDashboardContent() {
                     slot: Number(config.slot) || 1,
                     isCloud: config.is_cloud,
                     mockMode: !email.toLowerCase().startsWith('adm') ? false : true,
+                    connectOnly: true,
                     ioTags: config.io_config || []
                   })
                 });
@@ -191,8 +202,12 @@ function PlcDashboardContent() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
+    let isFetching = false;
+
     if (isConnected) {
       interval = setInterval(async () => {
+        if (isFetching) return;
+        isFetching = true;
         try {
           const res = await fetch('/api/plc/connect', {
             method: 'POST',
@@ -202,9 +217,10 @@ function PlcDashboardContent() {
               ip: ipAddress,
               port,
               rack: Number(rack),
-              slot: Number(slot),
+              slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
               isCloud: connectionMode === 'cloud',
               mockMode,
+              connectOnly: ioTags.length === 0,
               ioTags
             })
           });
@@ -216,13 +232,15 @@ function PlcDashboardContent() {
           }
         } catch (error) {
           console.error('Polling network error:', error);
+        } finally {
+          isFetching = false;
         }
       }, 2000); // 2 segundos (refresco en tiempo real)
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags]);
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags.length]);
 
   if (loading) {
     return (
@@ -245,9 +263,10 @@ function PlcDashboardContent() {
           ip: ipAddress,
           port,
           rack: Number(rack),
-          slot: Number(slot),
+          slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
           isCloud: connectionMode === 'cloud',
           mockMode,
+          connectOnly: true,
           ioTags
         })
       });

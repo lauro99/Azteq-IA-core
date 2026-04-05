@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { brand, ip, port, rack, slot, isCloud, mockMode, ioTags } = body;
+    const { brand, ip, port, rack, slot, isCloud, mockMode, ioTags, connectOnly } = body;
 
     if (!ip) {
       // Log error in Supabase
@@ -108,7 +108,68 @@ export async function POST(request: Request) {
           return;
         }
 
+        const shouldConnectOnly = connectOnly || !ioTags || ioTags.length === 0;
+        console.log('[Azteq Driver] connectOnly:', connectOnly, 'ioTags length:', (ioTags || []).length, 'shouldConnectOnly:', shouldConnectOnly);
+        if (shouldConnectOnly) {
+          conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
+            conn.dropConnection();
+            if (typeof err !== 'undefined') {
+              supabase.from('plc_errors').insert([
+                {
+                  user_id: body.user_id || null,
+                  plc_id: body.plc_id || null,
+                  equip: brand || 'Desconocido',
+                  code: 'ERR-CONN',
+                  desc: `Error de conexión en puerto industrial ${ip}: ${err}`,
+                  severity: 'Crítico',
+                  resolved: false
+                }
+              ]);
+              return resolve(NextResponse.json({
+                success: false,
+                error: `Error de conexión en puerto industrial ${ip}: ` + err
+              }, { status: 400 }));
+            }
+            return resolve(NextResponse.json({
+              success: true,
+              message: 'Conexión exitosa con ' + brand.toUpperCase(),
+              data: { estatusGeneral: 'OPERATIVO' }
+            }));
+          });
+          return;
+        }
+
         // Si hay ioTags, realiza la lectura como antes
+        const sanitizedNames = new Set<string>();
+        const normalizedTags = (ioTags || [])
+          .filter((tag: any) => tag?.name && tag?.address)
+          .map((tag: any, index: number) => {
+            const rawName = String(tag.name).trim() || `tag_${index}`;
+            let alias = rawName.replace(/[^a-zA-Z0-9_]/g, '_');
+            if (!alias || /^[0-9]/.test(alias)) {
+              alias = `tag_${alias}`;
+            }
+            let uniqueAlias = alias;
+            let counter = 1;
+            while (sanitizedNames.has(uniqueAlias)) {
+              uniqueAlias = `${alias}_${counter++}`;
+            }
+            sanitizedNames.add(uniqueAlias);
+            return {
+              id: String(tag.id || Date.now()),
+              alias: uniqueAlias,
+              group: tag.group || '',
+              name: rawName,
+              address: String(tag.address),
+              type: String(tag.type || 'bool').toLowerCase(),
+              unit: tag.unit || ''
+            };
+          });
+
+        const itemsToRead = normalizedTags.map((t: any) => t.alias);
+        console.log('[Azteq Driver] Tags a leer:', itemsToRead);
+        console.log('[Azteq Driver] Traducciones:', normalizedTags.map((t: any) => ({ alias: t.alias, name: t.name, address: t.address, type: t.type })));
+
         conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
           if (typeof err !== 'undefined') {
             supabase.from('plc_errors').insert([
@@ -128,41 +189,64 @@ export async function POST(request: Request) {
             }, { status: 400 }));
           }
 
+          if (connectOnly || itemsToRead.length === 0) {
+            console.log('[Azteq Driver] Skipping variable read, connectOnly=', connectOnly, 'itemsToRead=', itemsToRead);
+            conn.dropConnection();
+            return resolve(NextResponse.json({
+              success: true,
+              message: 'Conexión exitosa con ' + brand.toUpperCase(),
+              data: { estatusGeneral: 'OPERATIVO' }
+            }));
+          }
+
+          const itemAliases = normalizedTags.map((t: any) => t.alias);
+
           conn.setTranslationCB((tag: string) => {
-            const variable = ioTags.find((t: any) => t.name === tag);
-            return variable ? variable.address : undefined;
+            const variable = normalizedTags.find((t: any) => t.alias === tag);
+            if (!variable) {
+              console.error('[Azteq Driver] No se encontró traducción para alias:', tag);
+              return undefined;
+            }
+            return variable.address;
           });
 
-          const itemsToRead = ioTags.map((t: any) => t.name);
-          conn.addItems(itemsToRead);
+          conn.addItems(itemAliases);
 
           conn.readAllItems((readErr: any, values: any) => {
             conn.dropConnection();
             if (readErr) {
+              const readErrorMsg = typeof readErr === 'object'
+                ? readErr.message || JSON.stringify(readErr)
+                : String(readErr);
               supabase.from('plc_errors').insert([
                 {
                   user_id: body.user_id || null,
                   plc_id: body.plc_id || null,
                   equip: brand || 'Desconocido',
                   code: 'ERR-READ',
-                  desc: 'Error leyendo bus de datos: ' + readErr,
+                  desc: 'Error leyendo bus de datos: ' + readErrorMsg,
                   severity: 'Crítico',
                   resolved: false
                 }
               ]);
+              console.error('[Azteq Driver] Error de lectura:', readErrorMsg, 'Valores parciales:', values);
               return resolve(NextResponse.json({
                 success: false,
-                error: 'Error leyendo bus de datos: ' + readErr
+                error: 'Error leyendo bus de datos: ' + readErrorMsg
               }, { status: 500 }));
             }
+            console.log('[Azteq Driver] Valores leídos:', values);
             supabase.from('plc_errors')
               .update({ resolved: true })
               .eq('plc_id', body.plc_id || null)
               .eq('resolved', false)
               .lte('time', new Date().toISOString());
             let finalData: any = { estatusGeneral: 'OPERATIVO' };
-            itemsToRead.forEach(item => {
-              finalData[item] = values[item] !== undefined ? values[item] : '--';
+            itemAliases.forEach((alias: string) => {
+              const tag = normalizedTags.find((t: any) => t.alias === alias);
+              if (tag) {
+                finalData[tag.name] = values[alias] !== undefined ? values[alias] : '--';
+              }
             });
             return resolve(NextResponse.json({
               success: true,
