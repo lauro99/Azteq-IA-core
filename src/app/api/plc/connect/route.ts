@@ -236,7 +236,8 @@ export async function POST(request: Request) {
           conn.addItems(itemAliases);
 
           conn.readAllItems((readErr: any, values: any) => {
-            if (readErr) {
+            const hadQualityIssue = readErr === true;
+            if (readErr && !hadQualityIssue) {
               const readErrorMsg = typeof readErr === 'object'
                 ? readErr.message || JSON.stringify(readErr)
                 : String(readErr);
@@ -257,7 +258,12 @@ export async function POST(request: Request) {
                 error: 'Error leyendo bus de datos: ' + readErrorMsg
               }, { status: 500 }), true, 'read-error');
             }
-            console.log('[Azteq Driver] Valores leídos:', values);
+
+            if (hadQualityIssue) {
+              console.warn('[Azteq Driver] Lectura completada con calidad parcial. Valores devueltos:', values);
+            } else {
+              console.log('[Azteq Driver] Valores leídos:', values);
+            }
             supabase.from('plc_errors')
               .update({ resolved: true })
               .eq('plc_id', body.plc_id || null)
@@ -270,11 +276,15 @@ export async function POST(request: Request) {
                 finalData[tag.name] = values[alias] !== undefined ? values[alias] : '--';
               }
             });
-            return closeAndResolve(NextResponse.json({
+            const responseBody: any = {
               success: true,
               message: 'Conexión exitosa y lectura de variables',
               data: finalData
-            }));
+            };
+            if (hadQualityIssue) {
+              responseBody.warning = 'Lectura completada con calidad parcial en algunos valores.';
+            }
+            return closeAndResolve(NextResponse.json(responseBody));
           });
         });
       } else {
