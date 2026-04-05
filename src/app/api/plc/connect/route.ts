@@ -44,26 +44,28 @@ export async function POST(request: Request) {
         const closeAndResolve = (response: Response, shouldClose = true, reason = 'unknown') => {
           console.log(`[Azteq Driver] closeAndResolve called, reason=${reason}, shouldClose=${shouldClose}`);
           try {
-            if (shouldClose) {
-              if (typeof (conn as any).dropConnection === 'function') {
-                try {
-                  (conn as any).dropConnection(() => {});
-                } catch (dropErr) {
-                  console.error('[Azteq Driver] Error invoking dropConnection:', dropErr);
-                }
-              } else if (typeof (conn as any).connectionCleanup === 'function') {
-                try {
-                  (conn as any).connectionCleanup();
-                } catch (cleanupErr) {
-                  console.error('[Azteq Driver] Error invoking connectionCleanup:', cleanupErr);
-                }
-              }
-            }
             resolve(response);
           } catch (dropErr) {
             console.error('[Azteq Driver] Error resolving response:', dropErr);
             resolve(response);
           }
+          if (!shouldClose) {
+            return;
+          }
+          setTimeout(() => {
+            try {
+              if (typeof (conn as any).dropConnection === 'function') {
+                (conn as any).dropConnection(() => {
+                  console.log('[Azteq Driver] dropConnection completed.');
+                });
+              } else if (typeof (conn as any).connectionCleanup === 'function') {
+                (conn as any).connectionCleanup();
+                console.log('[Azteq Driver] connectionCleanup completed.');
+              }
+            } catch (cleanupErr) {
+              console.error('[Azteq Driver] Error cleaning up connection:', cleanupErr);
+            }
+          }, 250);
         };
 
         // Si NO hay ioTags configurados, solo prueba la conexión y responde éxito si conecta

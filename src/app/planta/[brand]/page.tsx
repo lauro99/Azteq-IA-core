@@ -171,7 +171,7 @@ function PlcDashboardContent() {
                     slot: Number(config.slot) || 1,
                     isCloud: config.is_cloud,
                     
-                    connectOnly: true,
+                    connectOnly: !(config.io_config && config.io_config.length > 0),
                     ioTags: config.io_config || []
                   })
                 });
@@ -262,7 +262,7 @@ function PlcDashboardContent() {
           rack: Number(rack),
           slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
           isCloud: connectionMode === 'cloud',
-          connectOnly: true,
+          connectOnly: ioTags.length === 0,
           ioTags
         })
       });
