@@ -142,8 +142,13 @@ export default function PlantDashboard() {
             })
           });
           const data = await res.json();
+          // Log completo de la respuesta para depuración
+          console.log('Respuesta de /api/plc/connect:', data);
           if (data.success) {
             newData[plc.id] = data.data;
+          } else {
+            // Mostrar alerta con el error exacto recibido
+            alert(`Error leyendo bus de datos: ${data.error || JSON.stringify(data)}`);
           }
         } catch (error) {
           console.error('Polling error:', error);

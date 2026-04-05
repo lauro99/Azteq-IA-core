@@ -73,14 +73,44 @@ export async function POST(request: Request) {
       // 1) Si es Siemens, usamos el driver Nativo S7
       if (brand.toLowerCase().includes('siemens') || brand.toLowerCase() === 's7') {
         const conn = new nodes7();
-        
         const plcPort = port ? parseInt(port, 10) : 102;
         const plcRack = rack !== undefined ? parseInt(rack, 10) : 0;
         const plcSlot = slot !== undefined ? parseInt(slot, 10) : 1;
 
+        // Si NO hay ioTags configurados, solo prueba la conexión y responde éxito si conecta
+        if (!ioTags || ioTags.length === 0) {
+          conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
+            conn.dropConnection();
+            if (typeof err !== 'undefined') {
+              supabase.from('plc_errors').insert([
+                {
+                  user_id: body.user_id || null,
+                  plc_id: body.plc_id || null,
+                  equip: brand || 'Desconocido',
+                  code: 'ERR-CONN',
+                  desc: `Error de conexión en puerto industrial ${ip}: ${err}`,
+                  severity: 'Crítico',
+                  resolved: false
+                }
+              ]);
+              return resolve(NextResponse.json({
+                success: false,
+                error: `Error de conexión en puerto industrial ${ip}: ` + err
+              }, { status: 400 }));
+            }
+            // Si conecta, responde éxito
+            return resolve(NextResponse.json({
+              success: true,
+              message: 'Conexión exitosa con ' + brand.toUpperCase(),
+              data: { estatusGeneral: 'OPERATIVO' }
+            }));
+          });
+          return;
+        }
+
+        // Si hay ioTags, realiza la lectura como antes
         conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
           if (typeof err !== 'undefined') {
-            // Log connection error
             supabase.from('plc_errors').insert([
               {
                 user_id: body.user_id || null,
@@ -92,38 +122,23 @@ export async function POST(request: Request) {
                 resolved: false
               }
             ]);
-            return resolve(NextResponse.json({ 
-              success: false, 
-              error: `Error de conexión en puerto industrial ${ip}: ` + err 
+            return resolve(NextResponse.json({
+              success: false,
+              error: `Error de conexión en puerto industrial ${ip}: ` + err
             }, { status: 400 }));
           }
 
           conn.setTranslationCB((tag: string) => {
-            if (ioTags && ioTags.length > 0) {
-              const variable = ioTags.find((t: any) => t.name === tag);
-              return variable ? variable.address : undefined;
-            }
-            
-            const variables: Record<string, string> = {
-              temperaturaCpu: 'DB1,REAL0',
-              presionSistema: 'DB1,REAL4',
-              ciclosPorHora:  'DB1,INT8' 
-            };
-            return variables[tag];
+            const variable = ioTags.find((t: any) => t.name === tag);
+            return variable ? variable.address : undefined;
           });
 
-          let itemsToRead = ['temperaturaCpu', 'presionSistema', 'ciclosPorHora'];
-          if (ioTags && ioTags.length > 0) {
-            itemsToRead = ioTags.map((t: any) => t.name);
-          }
-
+          const itemsToRead = ioTags.map((t: any) => t.name);
           conn.addItems(itemsToRead);
 
           conn.readAllItems((readErr: any, values: any) => {
             conn.dropConnection();
-
             if (readErr) {
-              // Log read error
               supabase.from('plc_errors').insert([
                 {
                   user_id: body.user_id || null,
@@ -140,31 +155,18 @@ export async function POST(request: Request) {
                 error: 'Error leyendo bus de datos: ' + readErr
               }, { status: 500 }));
             }
-
-            // On success, mark all unresolved errors for this PLC as resolved
             supabase.from('plc_errors')
               .update({ resolved: true })
               .eq('plc_id', body.plc_id || null)
               .eq('resolved', false)
               .lte('time', new Date().toISOString());
-
             let finalData: any = { estatusGeneral: 'OPERATIVO' };
-            if (ioTags && ioTags.length > 0) {
-               itemsToRead.forEach(item => {
-                 finalData[item] = values[item] !== undefined ? values[item] : '--';
-               });
-            } else {
-               finalData = {
-                 temperaturaCpu: values.temperaturaCpu?.toFixed(1) ?? '--',
-                 presionSistema: values.presionSistema?.toFixed(2) ?? '--',
-                 estatusGeneral: 'OPERATIVO',
-                 ciclosPorHora: values.ciclosPorHora ?? 0
-               };
-            }
-
-            resolve(NextResponse.json({
+            itemsToRead.forEach(item => {
+              finalData[item] = values[item] !== undefined ? values[item] : '--';
+            });
+            return resolve(NextResponse.json({
               success: true,
-              message: 'Conexión Real S7 establecida con ' + brand.toUpperCase(),
+              message: 'Conexión exitosa y lectura de variables',
               data: finalData
             }));
           });
