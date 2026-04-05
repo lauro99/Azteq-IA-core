@@ -77,10 +77,35 @@ export async function POST(request: Request) {
         const plcRack = rack !== undefined ? parseInt(rack, 10) : 0;
         const plcSlot = slot !== undefined ? parseInt(slot, 10) : 1;
 
+        const closeAndResolve = (response: Response, shouldClose = true, reason = 'unknown') => {
+          console.log(`[Azteq Driver] closeAndResolve called, reason=${reason}, shouldClose=${shouldClose}`);
+          try {
+            if (!shouldClose) {
+              return resolve(response);
+            }
+            setImmediate(() => {
+              try {
+                if (typeof (conn as any).connectionCleanup === 'function') {
+                  console.log('[Azteq Driver] connectionCleanup invoked before response.');
+                  (conn as any).connectionCleanup();
+                } else {
+                  console.log('[Azteq Driver] connectionCleanup not available on conn.');
+                }
+                resolve(response);
+              } catch (dropErr) {
+                console.error('[Azteq Driver] Error closing connection:', dropErr);
+                resolve(response);
+              }
+            });
+          } catch (dropErr) {
+            console.error('[Azteq Driver] Error resolving response:', dropErr);
+            resolve(response);
+          }
+        };
+
         // Si NO hay ioTags configurados, solo prueba la conexión y responde éxito si conecta
         if (!ioTags || ioTags.length === 0) {
           conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
-            conn.dropConnection();
             if (typeof err !== 'undefined') {
               supabase.from('plc_errors').insert([
                 {
@@ -93,17 +118,17 @@ export async function POST(request: Request) {
                   resolved: false
                 }
               ]);
-              return resolve(NextResponse.json({
+              return closeAndResolve(NextResponse.json({
                 success: false,
                 error: `Error de conexión en puerto industrial ${ip}: ` + err
-              }, { status: 400 }));
+              }, { status: 400 }), false, 'connect-error');
             }
             // Si conecta, responde éxito
-            return resolve(NextResponse.json({
+            return closeAndResolve(NextResponse.json({
               success: true,
               message: 'Conexión exitosa con ' + brand.toUpperCase(),
               data: { estatusGeneral: 'OPERATIVO' }
-            }));
+            }), true, 'connect-success');
           });
           return;
         }
@@ -112,7 +137,6 @@ export async function POST(request: Request) {
         console.log('[Azteq Driver] connectOnly:', connectOnly, 'ioTags length:', (ioTags || []).length, 'shouldConnectOnly:', shouldConnectOnly);
         if (shouldConnectOnly) {
           conn.initiateConnection({ port: plcPort, host: ip, rack: plcRack, slot: plcSlot }, (err: any) => {
-            conn.dropConnection();
             if (typeof err !== 'undefined') {
               supabase.from('plc_errors').insert([
                 {
@@ -125,16 +149,16 @@ export async function POST(request: Request) {
                   resolved: false
                 }
               ]);
-              return resolve(NextResponse.json({
+              return closeAndResolve(NextResponse.json({
                 success: false,
                 error: `Error de conexión en puerto industrial ${ip}: ` + err
-              }, { status: 400 }));
+              }, { status: 400 }), false, 'connect-only-error');
             }
-            return resolve(NextResponse.json({
+            return closeAndResolve(NextResponse.json({
               success: true,
               message: 'Conexión exitosa con ' + brand.toUpperCase(),
               data: { estatusGeneral: 'OPERATIVO' }
-            }));
+            }), true, 'connect-only-success');
           });
           return;
         }
@@ -183,20 +207,19 @@ export async function POST(request: Request) {
                 resolved: false
               }
             ]);
-            return resolve(NextResponse.json({
+            return closeAndResolve(NextResponse.json({
               success: false,
               error: `Error de conexión en puerto industrial ${ip}: ` + err
-            }, { status: 400 }));
+            }, { status: 400 }), false);
           }
 
           if (connectOnly || itemsToRead.length === 0) {
             console.log('[Azteq Driver] Skipping variable read, connectOnly=', connectOnly, 'itemsToRead=', itemsToRead);
-            conn.dropConnection();
-            return resolve(NextResponse.json({
+            return closeAndResolve(NextResponse.json({
               success: true,
               message: 'Conexión exitosa con ' + brand.toUpperCase(),
               data: { estatusGeneral: 'OPERATIVO' }
-            }));
+            }), true, 'connect-skip-read');
           }
 
           const itemAliases = normalizedTags.map((t: any) => t.alias);
@@ -213,7 +236,6 @@ export async function POST(request: Request) {
           conn.addItems(itemAliases);
 
           conn.readAllItems((readErr: any, values: any) => {
-            conn.dropConnection();
             if (readErr) {
               const readErrorMsg = typeof readErr === 'object'
                 ? readErr.message || JSON.stringify(readErr)
@@ -230,10 +252,10 @@ export async function POST(request: Request) {
                 }
               ]);
               console.error('[Azteq Driver] Error de lectura:', readErrorMsg, 'Valores parciales:', values);
-              return resolve(NextResponse.json({
+              return closeAndResolve(NextResponse.json({
                 success: false,
                 error: 'Error leyendo bus de datos: ' + readErrorMsg
-              }, { status: 500 }));
+              }, { status: 500 }), true, 'read-error');
             }
             console.log('[Azteq Driver] Valores leídos:', values);
             supabase.from('plc_errors')
@@ -248,7 +270,7 @@ export async function POST(request: Request) {
                 finalData[tag.name] = values[alias] !== undefined ? values[alias] : '--';
               }
             });
-            return resolve(NextResponse.json({
+            return closeAndResolve(NextResponse.json({
               success: true,
               message: 'Conexión exitosa y lectura de variables',
               data: finalData
