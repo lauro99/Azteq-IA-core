@@ -123,9 +123,8 @@ export default function PlantDashboard() {
       const newData: Record<string, any> = {};
       
       const promises = userPLCs.map(async (plc) => {
-        // Obtenemos los valores a través de la misma API que en las vistas individuales, 
-        // pasamos mockMode: true para no romper en caso de no tener PLC conectado físicamente,
-        // pero usaremos el mapeo real de io_config.
+        // Obtenemos los valores a través de la misma API que en las vistas individuales,
+        // usamos el mapeo real de io_config para las máquinas físicas.
         try {
           const res = await fetch('/api/plc/connect', {
             method: 'POST',
@@ -137,7 +136,7 @@ export default function PlantDashboard() {
               rack: Number(plc.rack) || 0,
               slot: Number(plc.slot) || 1,
               isCloud: plc.is_cloud,
-              mockMode: true, // Forzamos simulación visual en el dashboard por ahora
+               // Forzamos simulación visual en el dashboard por ahora
               ioTags: plc.io_config || []
             })
           });

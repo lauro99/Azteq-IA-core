@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { brand, ip, port, rack, slot, isCloud, mockMode, ioTags, connectOnly } = body;
+    const { brand, ip, port, rack, slot, isCloud, ioTags, connectOnly } = body;
 
     if (!ip) {
       // Log error in Supabase
@@ -23,42 +23,6 @@ export async function POST(request: Request) {
         }
       ]);
       return NextResponse.json({ success: false, error: 'Falta la dirección IP del PLC' }, { status: 400 });
-    }
-
-    // ----------------------------------------------------------------------
-    // MODO ADMIN / PRUEBAS (SIMULACIÓN SIN HARDWARE)
-    // ----------------------------------------------------------------------
-    if (mockMode) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const mockSensorData: any = {
-        temperaturaCpu: +(Math.random() * 10 + 40).toFixed(1),
-        presionSistema: +(Math.random() * 0.5 + 1.0).toFixed(2),
-        estatusGeneral: 'OPERATIVO (TEST)',
-        ciclosPorHora: Math.floor(Math.random() * 500 + 1000)
-      };
-
-      if (ioTags && ioTags.length > 0) {
-        for (let key in mockSensorData) delete mockSensorData[key];
-        mockSensorData.estatusGeneral = 'OPERATIVO (TEST)';
-        
-        ioTags.forEach((tag: any) => {
-          let randomValue: any = 0;
-          if (tag.type.toLowerCase().includes('bool')) {
-            randomValue = Math.random() > 0.5;
-          } else if (tag.type.toLowerCase().includes('real') || tag.type.toLowerCase().includes('float')) {
-             randomValue = +(Math.random() * 100).toFixed(2);
-          } else {
-             randomValue = Math.floor(Math.random() * 100);
-          }
-          mockSensorData[tag.name] = randomValue;
-        });
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: 'Conexión simulada con ' + brand.toUpperCase(),
-        data: mockSensorData
-      });
     }
 
     // ----------------------------------------------------------------------
@@ -85,13 +49,17 @@ export async function POST(request: Request) {
             }
             setImmediate(() => {
               try {
-                if (typeof (conn as any).connectionCleanup === 'function') {
-                  console.log('[Azteq Driver] connectionCleanup invoked before response.');
+                if (typeof (conn as any).dropConnection === 'function') {
+                  console.log('[Azteq Driver] dropConnection invoked before response.');
+                  (conn as any).dropConnection(() => resolve(response));
+                } else if (typeof (conn as any).connectionCleanup === 'function') {
+                  console.log('[Azteq Driver] connectionCleanup fallback invoked before response.');
                   (conn as any).connectionCleanup();
+                  resolve(response);
                 } else {
-                  console.log('[Azteq Driver] connectionCleanup not available on conn.');
+                  console.log('[Azteq Driver] no cleanup function available on conn.');
+                  resolve(response);
                 }
-                resolve(response);
               } catch (dropErr) {
                 console.error('[Azteq Driver] Error closing connection:', dropErr);
                 resolve(response);
@@ -184,9 +152,9 @@ export async function POST(request: Request) {
               alias: uniqueAlias,
               group: tag.group || '',
               name: rawName,
-              address: String(tag.address),
-              type: String(tag.type || 'bool').toLowerCase(),
-              unit: tag.unit || ''
+              address: String(tag.address).trim(),
+              type: String(tag.type || 'bool').trim().toLowerCase(),
+              unit: String(tag.unit || '').trim()
             };
           });
 
@@ -241,6 +209,10 @@ export async function POST(request: Request) {
               const readErrorMsg = typeof readErr === 'object'
                 ? readErr.message || JSON.stringify(readErr)
                 : String(readErr);
+              const isReset = readErrorMsg.toString().includes('ECONNRESET');
+              if (isReset) {
+                console.warn('[Azteq Driver] PLC TCP connection reset detected:', readErrorMsg);
+              }
               supabase.from('plc_errors').insert([
                 {
                   user_id: body.user_id || null,
@@ -252,10 +224,9 @@ export async function POST(request: Request) {
                   resolved: false
                 }
               ]);
-              console.error('[Azteq Driver] Error de lectura:', readErrorMsg, 'Valores parciales:', values);
               return closeAndResolve(NextResponse.json({
                 success: false,
-                error: 'Error leyendo bus de datos: ' + readErrorMsg
+                error: 'Error leyendo bus de datos: ' + readErrorMsg + (isReset ? ' (Revisa IP, Rack/Slot y direcciones de tags)' : '')
               }, { status: 500 }), true, 'read-error');
             }
 
@@ -273,7 +244,11 @@ export async function POST(request: Request) {
             itemAliases.forEach((alias: string) => {
               const tag = normalizedTags.find((t: any) => t.alias === alias);
               if (tag) {
-                finalData[tag.name] = values[alias] !== undefined ? values[alias] : '--';
+                const rawValue = values[alias];
+                const normalizedValue = typeof rawValue === 'string' && rawValue.toUpperCase().startsWith('BAD')
+                  ? '--'
+                  : rawValue;
+                finalData[tag.name] = normalizedValue !== undefined ? normalizedValue : '--';
               }
             });
             const responseBody: any = {

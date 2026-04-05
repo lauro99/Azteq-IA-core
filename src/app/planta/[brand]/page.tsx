@@ -33,7 +33,6 @@ function PlcDashboardContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [connectionMode, setConnectionMode] = useState<'local' | 'cloud'>('local');
-  const [mockMode, setMockMode] = useState(true);
   const [plcData, setPlcData] = useState<any>(null);
   const [selectedPlcId, setSelectedPlcId] = useState('');
   
@@ -128,8 +127,6 @@ function PlcDashboardContent() {
         setUser(session.user);
         if (email.toLowerCase().startsWith('adm')) {
           setIsAdmin(true);
-        } else {
-          setMockMode(false); // Ocultar y apagar simulación para usuarios mortales
         }
         
         // Obtener PLCs de este usuario desde Supabase
@@ -173,7 +170,7 @@ function PlcDashboardContent() {
                     rack: Number(config.rack) || 0,
                     slot: Number(config.slot) || 1,
                     isCloud: config.is_cloud,
-                    mockMode: !email.toLowerCase().startsWith('adm') ? false : true,
+                    
                     connectOnly: true,
                     ioTags: config.io_config || []
                   })
@@ -219,7 +216,7 @@ function PlcDashboardContent() {
               rack: Number(rack),
               slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
               isCloud: connectionMode === 'cloud',
-              mockMode,
+              
               connectOnly: ioTags.length === 0,
               ioTags
             })
@@ -240,7 +237,7 @@ function PlcDashboardContent() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags.length]);
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags.length]);
 
   if (loading) {
     return (
@@ -265,7 +262,6 @@ function PlcDashboardContent() {
           rack: Number(rack),
           slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
           isCloud: connectionMode === 'cloud',
-          mockMode,
           connectOnly: true,
           ioTags
         })
@@ -578,25 +574,6 @@ function PlcDashboardContent() {
                 Conectando ofrenda a <span className="font-bold">{brandInfo.name}</span>.
               </p>
             </div>
-
-            {/* Admin Toggle (MOCK / REAL) - VISIBLE SOLO PARA ADMINS */}
-            {isAdmin && (
-              <div className="w-full flex items-center justify-between mb-6 px-4 py-3 bg-[#F2EADA] border-l-[4px] border-[#CBB596] shadow-inner relative z-10">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-[#312011] uppercase tracking-widest font-sans">Modo Visión (Simulación)</span>
-                  <span className="text-[10px] text-[#69523C] font-semibold italic">Ver sin sacrificar hardware real</span>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={mockMode} 
-                    onChange={(e) => setMockMode(e.target.checked)} 
-                  />
-                  <div className="w-9 h-5 bg-[#CBB596] peer-focus:outline-none peer peer-checked:after:translate-x-full peer-checked:after:border-[#312011] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#FCFAEA] after:border-[#A3855B] after:border-[2px] after:h-4 after:w-4 after:transition-all peer-checked:bg-[#A3855B] border-[2px] border-[#69523C]"></div>
-                </label>
-              </div>
-            )}
 
             {/* Selector de Modo de Conexión */}
             <div className="w-full bg-[#D1C3AD]/50 p-1 border-[2px] border-[#A3855B] flex items-center mb-6 relative z-10" style={{ clipPath: 'polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px)' }}>
