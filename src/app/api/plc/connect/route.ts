@@ -31,6 +31,15 @@ export async function POST(request: Request) {
     // Dependiendo de la marca, el sistema enruta de forma dinámica la comunicación
     // hacia el protocolo industrial correcto (S7, ModbusTCP, Ethernet/IP, OPC UA, etc).
     
+    const normalizePlcAddress = (address: string) => {
+      return String(address)
+        .trim()
+        .replace(/^%/, '')
+        .replace(/\s+/g, '')
+        .replace(/,/g, '.')
+        .toUpperCase();
+    };
+    
     return new Promise<Response>((resolve) => {
       console.log(`[Azteq Driver] Intentando conectar fisicamente con ${brand.toUpperCase()} (${ip})...`);
 
@@ -149,7 +158,7 @@ export async function POST(request: Request) {
               alias: uniqueAlias,
               group: tag.group || '',
               name: rawName,
-              address: String(tag.address).trim(),
+              address: normalizePlcAddress(tag.address),
               type: String(tag.type || 'bool').trim().toLowerCase(),
               unit: String(tag.unit || '').trim()
             };
