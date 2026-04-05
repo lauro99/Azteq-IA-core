@@ -44,27 +44,22 @@ export async function POST(request: Request) {
         const closeAndResolve = (response: Response, shouldClose = true, reason = 'unknown') => {
           console.log(`[Azteq Driver] closeAndResolve called, reason=${reason}, shouldClose=${shouldClose}`);
           try {
-            if (!shouldClose) {
-              return resolve(response);
-            }
-            setImmediate(() => {
-              try {
-                if (typeof (conn as any).dropConnection === 'function') {
-                  console.log('[Azteq Driver] dropConnection invoked before response.');
-                  (conn as any).dropConnection(() => resolve(response));
-                } else if (typeof (conn as any).connectionCleanup === 'function') {
-                  console.log('[Azteq Driver] connectionCleanup fallback invoked before response.');
-                  (conn as any).connectionCleanup();
-                  resolve(response);
-                } else {
-                  console.log('[Azteq Driver] no cleanup function available on conn.');
-                  resolve(response);
+            if (shouldClose) {
+              if (typeof (conn as any).dropConnection === 'function') {
+                try {
+                  (conn as any).dropConnection(() => {});
+                } catch (dropErr) {
+                  console.error('[Azteq Driver] Error invoking dropConnection:', dropErr);
                 }
-              } catch (dropErr) {
-                console.error('[Azteq Driver] Error closing connection:', dropErr);
-                resolve(response);
+              } else if (typeof (conn as any).connectionCleanup === 'function') {
+                try {
+                  (conn as any).connectionCleanup();
+                } catch (cleanupErr) {
+                  console.error('[Azteq Driver] Error invoking connectionCleanup:', cleanupErr);
+                }
               }
-            });
+            }
+            resolve(response);
           } catch (dropErr) {
             console.error('[Azteq Driver] Error resolving response:', dropErr);
             resolve(response);
