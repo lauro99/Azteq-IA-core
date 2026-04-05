@@ -246,6 +246,24 @@ export async function POST(request: Request) {
               .eq('plc_id', body.plc_id || null)
               .eq('resolved', false)
               .lte('time', new Date().toISOString());
+
+            const noValueRead = itemAliases.every((alias: string) => {
+              const rawValue = values?.[alias];
+              return rawValue === undefined || rawValue === null || (typeof rawValue === 'string' && rawValue.toUpperCase().startsWith('BAD'));
+            });
+
+            if (noValueRead) {
+              console.warn('[Azteq Driver] No se leyeron variables en el PLC:', values);
+              return closeAndResolve(NextResponse.json({
+                success: false,
+                error: 'No se leyeron las variables. Revisa las direcciones de tags y la compatibilidad del PLC.',
+                debug: {
+                  values,
+                  tags: normalizedTags.map((t: any) => ({ alias: t.alias, address: t.address }))
+                }
+              }, { status: 500 }), true, 'no-values-read');
+            }
+
             let finalData: any = { estatusGeneral: 'OPERATIVO' };
             itemAliases.forEach((alias: string) => {
               const tag = normalizedTags.find((t: any) => t.alias === alias);

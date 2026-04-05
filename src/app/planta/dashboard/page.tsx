@@ -206,17 +206,22 @@ export default function PlantDashboard() {
   const displayPLCs = userPLCs;
 
 
-  // Real PLC errors/alerts from Supabase
+  // Real PLC errors/alerts from internal API
   const [recentErrors, setRecentErrors] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchErrors = async () => {
-      const { data, error } = await supabase
-        .from('plc_errors')
-        .select('*')
-        .order('time', { ascending: false })
-        .gte('time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Últimos 7 días
-      if (!error && data) setRecentErrors(data);
+      try {
+        const res = await fetch('/api/plc/errors');
+        if (!res.ok) {
+          console.error('Error fetching PLC errors:', await res.text());
+          return;
+        }
+        const data = await res.json();
+        setRecentErrors(data || []);
+      } catch (fetchError) {
+        console.error('Error fetching PLC errors:', fetchError);
+      }
     };
     fetchErrors();
     const interval = setInterval(fetchErrors, 5000); // Refresca cada 5s
