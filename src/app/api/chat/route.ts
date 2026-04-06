@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
-    const { message, userEmail, image } = await request.json();
+    const { message, userEmail, image, history, chatId } = await request.json();
 
     // Validar que el mensaje no esté vacío
     if (!message && !image) {
@@ -98,6 +98,21 @@ export async function POST(request: Request) {
           return docText;
         }).join('\n\n');
       }
+
+      // === Novedad: Buscar en la memoria global de chats anteriores ===
+      if (userEmail) {
+        const { data: memoriaChats, error: memError } = await supabase.rpc('buscar_memoria_chat', {
+          query_embedding: embedding,
+          p_user_email: userEmail,
+          match_threshold: 0.6, // Tiene que ser similar
+          match_count: 3
+        });
+        
+        if (!memError && memoriaChats && memoriaChats.length > 0) {
+          const memoriaExtra = memoriaChats.map((m: any) => `(${m.role.toUpperCase()} dijo): ${m.content}`).join('\n');
+          manualesTexto += `\n\n--- RECUERDOS DE CHATS ANTERIORES CONTIGO ---\n${memoriaExtra}`;
+        }
+      }
     }
 
     // 4. Instrucción secreta para la IA (con la regla híbrida)
@@ -113,11 +128,11 @@ Si el manual oficial proporciona un [URL_DE_IMAGEN_REFERENCIA: ...], tienes que 
 Para mostrar la imagen, SIEMPRE utiliza formato Markdown de imagen exacto así: ![Imagen del manual oficial](AQUÍ_PONES_EL_URL)
 
 REGLA DE CONVERSACIÓN:
-Responde de forma directa, profesional y técnica. NO uses frases de relleno introductorias como "El ejemplo que proporcionaste", "Como mencionaste", ni saludos innecesarios. Ve directo al grano.
+Sé empático, amable y conversacional. Si el usuario te saluda, devuélvele el saludo amablemente. Cuando expliques algo técnico, mantén la claridad y ve al grano, pero sin perder la empatía ni sonar como un robot estricto. Evita muletillas molestas repetitivas como "El ejemplo que proporcionaste", pero mantén un tono amigable.
 
 REGLAS DE DIAGRAMAS ASCII Y CÓDIGO (LADDER/ESCALERA):
-Si el texto de referencia o la pregunta contienen un diagrama hecho con texto (ASCII art), caracteres especiales (como barras |, guiones - o corchetes []), DEBES conservar EXACTAMENTE la misma estructura, espacios en blanco, y formato original.
-SIEMPRE debes envolver estos diagramas o esquemas de escalera dentro de un bloque de código markdown (usando tres comillas invertidas \`\`\`) para que el sistema respete los espacios y saltos de línea. Nunca lo imprimas como texto normal.
+1. Para diagramas COMPLETOS de múltiples líneas (ASCII art), DEBES usar un bloque de código markdown (tres comillas invertidas \`\`\`) para conservar los saltos de línea.
+2. MUY IMPORTANTE: Para explicar componentes individuales, instrucciones o etiquetas sueltas (ej: I0.0, M0.1) dentro de tus párrafos, USA texto normal o SOLO UNA comilla invertida (ej: \`I0.0\`). NUNCA uses bloques de código completos (tres comillas) para palabras sueltas, ya que esto rompe la lectura y crea cajas negras innecesarias.
 
 REGLA DE FORMATO MATEMÁTICO (USO OBLIGATORIO DE KaTeX):
 Nunca uses barras invertidas y paréntesis \`\\( ... \\)\` o corchetes \`\\[ ... \\]\` para las ecuaciones o notación matemática (como raíces, fracciones, superíndices, conjuntos, etc.). 
@@ -142,15 +157,58 @@ Debes usar EXPLÍCITAMENTE signos de dólar:
       });
     }
 
+    // Convertir el historial al formato que OpenAI espera
+    const openAIHistory = (history || []).map((msg: any) => ({
+      role: msg.role === 'ai' ? 'assistant' : 'user',
+      content: msg.content || ''
+    }));
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
+        ...openAIHistory,
         { role: 'user', content: userMessageContent }
       ],
     });
 
-    return NextResponse.json({ reply: completion.choices[0].message.content });
+    const reply = completion.choices[0].message.content;
+
+    // === GUARDAR EL CHAT EN SUPABASE ===
+    let activeChatId = chatId;
+    if (userEmail && activeChatId) {
+      // 1. Guardar mensaje del usuario (con su vector de recuerdo)
+      await supabase.from('messages').insert({
+        chat_id: activeChatId,
+        role: 'user',
+        content: message || '',
+        embedding: embedding, // El vector que creamos de la pregunta
+      });
+
+      // 2. Vectorizamos la respuesta de la IA para que también la repase en el futuro
+      let aiEmbedding = null;
+      if (reply) {
+        try {
+          const aiEmbRes = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: reply.substring(0, 1000) // Vectorizamos un fragmento si es enorme
+          });
+          aiEmbedding = aiEmbRes.data[0].embedding;
+        } catch (e) {}
+      }
+
+      // 3. Guardar la respuesta de la IA
+      await supabase.from('messages').insert({
+        chat_id: activeChatId,
+        role: 'ai',
+        content: reply,
+        embedding: aiEmbedding,
+      });
+      // Actualizamos última fecha para reordenar en la barra lateral
+      await supabase.from('chats').update({ updated_at: new Date().toISOString() }).eq('id', activeChatId);
+    }
+
+    return NextResponse.json({ reply, chatId: activeChatId });
   } catch (error: any) {
     console.error("Error general:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

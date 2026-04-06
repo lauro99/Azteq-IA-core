@@ -16,8 +16,13 @@ export default function ChatClient() {
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // === NOVEDAD: BARRA LATERAL Y ESTADOS DE CHAT ===
+  const [chats, setChats] = useState<{id: string, title: string}[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,6 +32,58 @@ export default function ChatClient() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email) return;
+
+      const { data } = await supabase
+        .from('chats')
+        .select('id, title')
+        .eq('user_email', session.user.email)
+        .order('updated_at', { ascending: false });
+
+      if (data) setChats(data);
+    };
+    fetchChats();
+  }, []);
+
+  const createNewChat = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email) {
+      alert("Debes iniciar sesión para guardar chats.");
+      return;
+    }
+
+    const newTitle = `Chat ${new Date().toLocaleDateString()}`;
+    const { data, error } = await supabase
+      .from('chats')
+      .insert({ user_email: session.user.email, title: newTitle })
+      .select()
+      .single();
+
+    if (data) {
+      setChats([data, ...chats]);
+      setCurrentChatId(data.id);
+      setMessages([]); 
+      setSidebarOpen(false); // Cerramos en mobile
+    }
+  };
+
+  const loadChat = async (id: string) => {
+    setCurrentChatId(id);
+    const { data } = await supabase
+      .from('messages')
+      .select('role, content, image_url')
+      .eq('chat_id', id)
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setMessages(data.map(m => ({ role: m.role, content: m.content || '', image: m.image_url })));
+    }
+    setSidebarOpen(false);
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,7 +107,7 @@ export default function ChatClient() {
       .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$'); // Block math: \[...\] -> $$...$$
   };
 
-  const sendMessageAPI = async (userMsg: string, imageBase64?: string | null) => {
+  const sendMessageAPI = async (userMsg: string, imageBase64?: string | null, currentMessages: any[] = []) => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -59,13 +116,31 @@ export default function ChatClient() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, userEmail, image: imageBase64 })
+        body: JSON.stringify({ 
+          message: userMsg, 
+          userEmail, 
+          image: imageBase64,
+          history: currentMessages.slice(-8), // Enviamos solo los últimos 8 mensajes para no saturar el token limit
+          chatId: currentChatId // Enviamos el ID del chat para que lo guarde en DB
+        })
       });
 
       const data = await res.json();
 
       if (res.ok) {
         setMessages((prev) => [...prev, { role: 'ai', content: data.reply }]);
+        
+        // Si no teníamos un chat asignado auto-crearlo
+        if (!currentChatId && data.chatId) {
+           setCurrentChatId(data.chatId);
+           // Refresh list
+           const { data: { session } } = await supabase.auth.getSession();
+           if (session?.user?.email) {
+             const { data: cData } = await supabase.from('chats').select('id, title').eq('user_email', session.user.email).order('updated_at', { ascending: false });
+             if (cData) setChats(cData);
+           }
+        }
+
       } else {
         setMessages((prev) => [...prev, { role: 'ai', content: '⚠ Error: ' + data.error }]);
       }
@@ -91,7 +166,7 @@ export default function ChatClient() {
       { role: 'user', content: userMsg, image: imgToSend }
     ]);
     
-    await sendMessageAPI(userMsg, imgToSend);
+    await sendMessageAPI(userMsg, imgToSend, messages);
   };
 
   const handleEdit = (index: number) => {
@@ -119,14 +194,69 @@ export default function ChatClient() {
     const newMessages = messages.slice(0, targetIndex + 1);
     setMessages(newMessages);
     
-    await sendMessageAPI(prevMsg.content);
+    await sendMessageAPI(prevMsg.content, prevMsg.image, messages.slice(0, targetIndex));
   };
 
   return (
-    <div className="w-full max-w-[850px] relative mt-auto flex flex-col items-center">
+    <div className="flex w-full overflow-hidden absolute inset-0">
       
-      {/* Contenedor Principal (Estilo Piedra/Códice) */}
-      <div className="w-full bg-[#E5DBCA]/95 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.8)] flex flex-col relative border-[4px] border-[#69523C]" style={{ clipPath: 'polygon(20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px)' }}>
+      {/* Botón flotante para abrir sidebar (Móviles) */}
+      <button 
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden fixed top-[15px] left-4 z-[60] bg-[#121927] border-[2px] border-[#E8C673] p-2 text-[#E8C673] rounded-md shadow-lg"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+
+      {/* --- CÓDIGO DE LA BARRA LATERAL --- */}
+      <div className={`
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 transition-transform duration-300 ease-in-out
+        absolute md:relative z-[50] h-full w-[280px] bg-[#1a2333] border-r-[4px] border-[#69523C] 
+        flex flex-col shadow-[15px_0_30px_rgba(0,0,0,0.8)]
+      `}>
+        <div className="p-4 border-b-[2px] border-[#69523C]">
+          <button 
+            onClick={createNewChat}
+            className="w-full flex items-center justify-center gap-2 bg-[#A3855B] text-[#FCFAEA] py-3 rounded text-[13px] font-bold uppercase tracking-widest border-[2px] border-[#E8C673]/50 hover:bg-[#8B6E4A] transition-colors"
+          >
+            <span>+</span> {t.newChat || 'Nuevo Chat'}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 py-4 space-y-2">
+          {chats.length === 0 ? (
+            <p className="text-center text-[#E8C673]/50 text-xs italic mt-4">Sin chats recientes</p>
+          ) : (
+            chats.map((chat) => (
+              <button
+                key={chat.id}
+                onClick={() => loadChat(chat.id)}
+                className={`w-full text-left truncate px-4 py-3 text-sm rounded transition-colors ${
+                  currentChatId === chat.id 
+                  ? 'bg-[#E8C673]/20 text-[#E8C673] border-l-[3px] border-[#E8C673]' 
+                  : 'text-gray-300 hover:bg-[#2A374A] border-l-[3px] border-transparent'
+                }`}
+              >
+                {chat.title}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Fondo oscuro para cerrar en móvil */}
+      {sidebarOpen && (
+         <div onClick={() => setSidebarOpen(false)} className="md:hidden fixed inset-0 bg-black/60 z-[40]"></div>
+      )}
+
+      {/* --- REEMPLAZO DEL CONTENEDOR PRINCIPAL ORIGINAL --- */}
+      <div className="flex-1 w-full max-w-[850px] relative mx-auto mt-auto flex flex-col items-center py-4 px-2 md:px-0">
+        
+        {/* Contenedor Principal (Estilo Piedra/Códice) */}
+        <div className="w-full h-full bg-[#E5DBCA]/95 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.8)] flex flex-col relative border-[4px] border-[#69523C]" style={{ clipPath: 'polygon(20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px)' }}>
 
         {/* Adornos en las esquinas interiores (Motivo Escalonado) */}
         <div className="absolute top-1 left-1 w-6 h-6 border-t-4 border-l-4 border-[#A3855B] z-10 pointer-events-none"></div>
@@ -348,8 +478,8 @@ export default function ChatClient() {
             </button>
           </div>
         </div>
-
       </div>
+    </div>
     </div>
   );
 }
