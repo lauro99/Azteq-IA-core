@@ -22,6 +22,17 @@ export default function RegistroPage() {
       setIsError(true);
       return;
     }
+
+    // Validaciones de contraseña
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+
+    if (password.length < 6 || !hasUpperCase || !hasSpecialChar || !hasNumber) {
+      setMessage('La contraseña debe tener al menos 6 caracteres (incluyendo números), 1 mayúscula y 1 símbolo especial (#$%&).');
+      setIsError(true);
+      return;
+    }
     
     setIsLoading(true);
     
@@ -33,14 +44,15 @@ export default function RegistroPage() {
       password,
     });
     
-    setIsLoading(false);
-    
     if (error) {
       setMessage(error.message || 'Error al registrarte. Intenta de nuevo.');
       setIsError(true);
+      setIsLoading(false);
     } else {
-      setMessage('Usuario registrado. Ya puedes iniciar sesión.');
+      setMessage('Redirigiendo al sistema...');
       setIsError(false);
+      // Supabase por defecto inicia sesión automáticamente si no requiere confirmación de email
+      router.push('/');
     }
   };
 
@@ -78,7 +90,7 @@ export default function RegistroPage() {
               <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Contraseña</label>
               <input
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="6 caracteres, 1 número, 1 mayú, 1 símbolo"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
