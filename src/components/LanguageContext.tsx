@@ -24,9 +24,9 @@ const dictionary = {
     returnBtn: "Retornar",
     expertBadge: "Azteq-IA Experto",
     hello: "¡Hola! Soy tu IA de Superinteligencia",
-    helloDesc: "Pregúntame sobre los manuales técnicos guardados en nuestra base de datos. Si no encuentro la información exacta, usaré mi conocimiento general para ayudarte.",
+    helloDesc: "",
     thinking: "Pensando...",
-    placeholder: "Pregunta algo técnico (Ej: ¿A qué temperatura se calibra la XYZ-120?)...",
+    placeholder: "Pregunta lo que quieras...",
     send: "Enviar",
     errorCon: "⚠ Fallo al conectar con la API de chat.",
 
@@ -152,9 +152,9 @@ const dictionary = {
     returnBtn: "Return",
     expertBadge: "Azteq-IA Expert",
     hello: "Hello! I am your Superintelligence AI",
-    helloDesc: "Ask me about the technical manuals stored in our database. If I can't find the exact information, I will use my general knowledge to help you.",
+    helloDesc: "",
     thinking: "Thinking...",
-    placeholder: "Ask something technical (e.g., At what temp is the XYZ-120 calibrated?)...",
+    placeholder: "Ask whatever you want...",
     send: "Send",
     errorCon: "⚠ Failed to connect to the chat API.",
 
