@@ -88,9 +88,15 @@ export async function POST(request: Request) {
         throw error;
       }
 
-      // 3. Juntar todos los párrafos encontrados en un solo texto
+      // 3. Juntar todos los párrafos encontrados en un solo texto (incluyendo imágenes)
       if (documentos && documentos.length > 0) {
-        manualesTexto = documentos.map((doc: { contenido: string }) => doc.contenido).join('\n\n');
+        manualesTexto = documentos.map((doc: { contenido: string, imagen_url?: string }) => {
+          let docText = doc.contenido;
+          if (doc.imagen_url) {
+            docText += `\n[URL_DE_IMAGEN_REFERENCIA: ${doc.imagen_url}]`;
+          }
+          return docText;
+        }).join('\n\n');
       }
     }
 
@@ -101,6 +107,17 @@ Tu tarea es responder la pregunta del usuario basándote en la siguiente informa
 --- MANUALES OFICIALES AZTEQ ---
 ${manualesTexto}
 ---------------------------------
+
+REGLA DE IMÁGENES:
+Si el manual oficial proporciona un [URL_DE_IMAGEN_REFERENCIA: ...], tienes que mostrarle esa imagen al usuario en tu respuesta, justo en el lugar en donde estás explicando.
+Para mostrar la imagen, SIEMPRE utiliza formato Markdown de imagen exacto así: ![Imagen del manual oficial](AQUÍ_PONES_EL_URL)
+
+REGLA DE CONVERSACIÓN:
+Responde de forma directa, profesional y técnica. NO uses frases de relleno introductorias como "El ejemplo que proporcionaste", "Como mencionaste", ni saludos innecesarios. Ve directo al grano.
+
+REGLAS DE DIAGRAMAS ASCII Y CÓDIGO (LADDER/ESCALERA):
+Si el texto de referencia o la pregunta contienen un diagrama hecho con texto (ASCII art), caracteres especiales (como barras |, guiones - o corchetes []), DEBES conservar EXACTAMENTE la misma estructura, espacios en blanco, y formato original.
+SIEMPRE debes envolver estos diagramas o esquemas de escalera dentro de un bloque de código markdown (usando tres comillas invertidas \`\`\`) para que el sistema respete los espacios y saltos de línea. Nunca lo imprimas como texto normal.
 
 REGLA DE FORMATO MATEMÁTICO (USO OBLIGATORIO DE KaTeX):
 Nunca uses barras invertidas y paréntesis \`\\( ... \\)\` o corchetes \`\\[ ... \\]\` para las ecuaciones o notación matemática (como raíces, fracciones, superíndices, conjuntos, etc.). 

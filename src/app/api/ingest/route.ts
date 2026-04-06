@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     let text = body.text;
     const { image } = body;
+    let imageUrl = null; // <= DECLARADO AQUÍ
 
     if (!text && !image) {
       return NextResponse.json({ error: 'Falta proveer el texto o una imagen' }, { status: 400 });
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extrae todo el texto útil o información técnica de esta imagen. Devuelve únicamente el texto extraído, sin comentarios adicionales." },
+              { type: "text", text: "Extrae todo el texto útil o información técnica de esta imagen. Si la imagen contiene esquemas ASCII, diagramas de escalera (Ladder logic) o código estructurado con símbolos ([, ], -, |), consérvalos EXACTAMENTE con los mismos espacios, alineaciones y saltos de línea originales. No asumas que es texto corrido. Devuelve únicamente el texto extraído, sin comentarios adicionales ni introducciones." },
               {
                 type: "image_url",
                 image_url: {
@@ -46,6 +47,30 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'No se pudo extraer texto de la imagen' }, { status: 400 });
       }
       
+      // Subir la imagen original a Supabase Storage
+      try {
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileName = `manual_${Date.now()}.png`;
+
+        const { data, error: uploadError } = await supabase
+          .storage
+          .from('imagenes_manuales')
+          .upload(fileName, buffer, {
+            contentType: 'image/png',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error("Error subiendo imagen a Storage:", uploadError);
+        } else if (data) {
+          const { data: publicData } = supabase.storage.from('imagenes_manuales').getPublicUrl(fileName);
+          imageUrl = publicData.publicUrl;
+        }
+      } catch (e) {
+         console.error("Error procesando base64 a Buffer:", e);
+      }
+
       // Combinar texto manual (si lo hay) y texto de la imagen (OCR)
       text = text ? `${text}\n\n[📝 TEXTO DE IMAGEN EXTRAÍDO]:\n${ocrText}` : ocrText;
     }
@@ -58,12 +83,13 @@ export async function POST(request: Request) {
 
     const embedding = embeddingResponse.data[0].embedding;
 
-    // 2. Guardar el texto original y su versión en vectores en Supabase
+    // 2. Guardar el texto original y su versión en vectores en Supabase (y la imagen)
     const { error } = await supabase
       .from('documentos')
       .insert({
         contenido: text,
         embedding: embedding,
+        imagen_url: imageUrl // <--- VARIABLE imageUrl DE LA LÍNEA 50, se asume let imageUrl = null fuera del if si es necesario.
       });
 
     if (error) {
