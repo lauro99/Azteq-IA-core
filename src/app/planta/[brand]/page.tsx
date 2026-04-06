@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
+import { useLanguage } from '@/components/LanguageContext';
 
 const brandData: Record<string, {name: string, color: string}> = {
   siemens: { name: 'Siemens', color: 'text-teal-400' },
@@ -22,6 +23,7 @@ function PlcDashboardContent() {
   // Extraemos el nombre de la marca desde la URL (dinámicamente)
   const brandId = (params?.brand as string) || 'desconocido';
   const brandInfo = brandData[brandId] || { name: brandId.toUpperCase(), color: 'text-[#D4AF37]' };
+  const { t } = useLanguage();
 
   // Validación de administrador y usuario actual
   const [isAdmin, setIsAdmin] = useState(false);
@@ -347,13 +349,13 @@ function PlcDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Mapeador Libre de Variables
+                  {t.plVarMapper}
                 </h3>
                 <button 
                   onClick={() => setShowMapperHelp(!showMapperHelp)} 
                   className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border transition-all ${showMapperHelp ? 'bg-[#E8C673] text-black border-[#E8C673]' : 'bg-transparent text-[#CBB596] border-[#CBB596] hover:bg-[#E8C673]/20'}`}
                 >
-                  {showMapperHelp ? 'Ocultar Ayuda' : '¿Cómo funciona?'}
+                  {showMapperHelp ? t.plHideHelp : t.plHowItWorks}
                 </button>
               </div>
               <button onClick={() => setShowConfigurator(false)} className="text-[#CBB596] hover:text-red-400 transition-colors">
@@ -383,7 +385,7 @@ function PlcDashboardContent() {
 
               {/* Formulario de nueva variable */}
               <div className="bg-black/40 border border-[#E8C673]/30 p-4 relative" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
-                <h4 className="text-[#CBB596] text-xs font-bold uppercase tracking-widest mb-3">Vincular Nueva Señal del PLC</h4>
+                <h4 className="text-[#CBB596] text-xs font-bold uppercase tracking-widest mb-3">{t.plNewSignal}</h4>
                 <div className="flex flex-col md:flex-row gap-3">
                   <div className="flex-1 min-w-0 w-full relative group">
                     <input
@@ -475,32 +477,32 @@ function PlcDashboardContent() {
               <div className="mt-2 text-sm flex-1">
                 <div className="grid grid-cols-12 gap-2 text-[#CBB596] font-bold text-[10px] uppercase tracking-widest border-b-[2px] border-[#E8C673]/30 pb-2 mb-2">
                   <div className="col-span-2 px-2 flex items-center gap-1">
-                    Grupo/Rutina
+                    {t.plGroupCol}
                     <span title="Banderas, memorias o entradas bajo un mismo proceso" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
                   <div className="col-span-3 px-2 flex items-center gap-1">
-                    Etiqueta Lógica
+                    {t.plLabelCol}
                     <span title="El nombre con el que el Gemelo Digital entenderá qué es esta variable" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
                   <div className="col-span-3 flex items-center gap-1">
-                    Dirección
+                    {t.plAddressCol}
                     <span title="La ruta exacta en el mapa de memoria del PLC" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
                   <div className="col-span-1 flex items-center gap-1">
-                    Unidad
+                    {t.plUnitCol}
                   </div>
                   <div className="col-span-2 flex items-center gap-1">
-                    Tipo Dato
+                    {t.plDataTypeCol}
                     <span title="Las dimensiones y formato de los datos que extraes" className="cursor-help font-normal opacity-70 hover:opacity-100 hover:text-[#E8C673]">(?)</span>
                   </div>
-                  <div className="col-span-1 text-right pr-2">Acción</div>
+                  <div className="col-span-1 text-right pr-2">{t.plActionCol}</div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 max-h-[30vh] overflow-y-auto pr-2">
                   {ioTags.length === 0 ? (
                     <div className="text-center py-8 text-[#A3855B] font-mono text-xs opacity-70 border-[2px] border-dashed border-[#A3855B]/30 m-2">
-                      [ SIN MAPEOS ENCONTRADOS ]
-                      <br/>Añade variables arriba para iniciar el gemelo digital.
+                      {t.plNoMappings}
+                      <br/>{t.plAddVarsHint}
                     </div>
                   ) : (
                     ioTags.map(tag => (
@@ -544,7 +546,7 @@ function PlcDashboardContent() {
                 className="px-6 py-2.5 text-[#CBB596] hover:text-[#FCFAEA] font-bold tracking-widest uppercase text-sm transition-colors"
                 style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
               >
-                Cancelar
+                {t.plCancel}
               </button>
               <button 
                 onClick={() => {
@@ -565,7 +567,7 @@ function PlcDashboardContent() {
                 className="px-6 py-2.5 bg-[#E8C673] hover:bg-[#D4AF37] text-[#312011] font-bold tracking-[0.1em] uppercase text-sm transition-all"
                 style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
               >
-                Sellar y Guardar Mapa
+                {t.plSaveMap}
               </button>
             </div>
           </div>
@@ -577,13 +579,19 @@ function PlcDashboardContent() {
           onClick={() => isConnected ? setIsConnected(false) : router.push('/planta')}
           className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
         >
-          <span>← {isConnected ? 'Desconectar' : 'Volver a Marcas'}</span>
+          <span>← {isConnected ? t.plDisconnect : t.plBackToBrands}</span>
         </button>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push('/planta/dashboard')}
+            className="text-xs font-semibold tracking-widest uppercase text-[#D4AF37] border border-[#D4AF37]/40 px-3 py-1.5 rounded hover:bg-[#D4AF37]/10 transition-colors"
+          >
+            {t.plDashboard}
+          </button>
           <LanguageSelector />
           <div className="h-6 w-px bg-white/20"></div>
           <span className={`font-bold text-sm tracking-widest uppercase ${brandInfo.color}`}>
-            {isConnected ? `Control Central - ${brandInfo.name}` : `Conexión PLC - ${brandInfo.name}`}
+            {isConnected ? `${t.plControlCenter} - ${brandInfo.name}` : `${t.plPlcConnection} - ${brandInfo.name}`}
           </span>
         </div>
       </header>
@@ -620,9 +628,9 @@ function PlcDashboardContent() {
                   ?
                 </button>
               </div>
-              <h2 className="text-2xl font-bold text-[#312011] tracking-tight font-serif uppercase">Enlace Ritual</h2>
+              <h2 className="text-2xl font-bold text-[#312011] tracking-tight font-serif uppercase">{t.plRitualLink}</h2>
               <p className="text-[#4B3B2B] text-sm font-medium mt-1">
-                Conectando ofrenda a <span className="font-bold">{brandInfo.name}</span>.
+                {t.plConnectingTo} <span className="font-bold">{brandInfo.name}</span>.
               </p>
             </div>
 
@@ -635,19 +643,19 @@ function PlcDashboardContent() {
                 onClick={() => setConnectionMode('local')}
                 className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-widest relative z-10 transition-colors ${connectionMode === 'local' ? 'text-[#E8C673]' : 'text-[#69523C] hover:text-[#312011]'}`}
               >
-                Templo Reliquia (Local)
+                {t.plLocalMode}
               </button>
-              <button 
+              <button
                 onClick={() => setConnectionMode('cloud')}
                 className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-widest relative z-10 transition-colors ${connectionMode === 'cloud' ? 'text-[#E8C673]' : 'text-[#69523C] hover:text-[#312011]'}`}
               >
-                Cielo Puro (VPN)
+                {t.plCloudMode}
               </button>
             </div>
 
             {/* Quick Select Autocomplete (Mock Data) */}
             <div className="w-full mb-6 relative z-10 flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Seleccionar Reliquia / Conexión Nueva</label>
+              <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSelectPlc}</label>
               <div className="relative">
                 <select 
                   value={selectedPlcId}
@@ -658,7 +666,7 @@ function PlcDashboardContent() {
                   {savedPLCs.map(plc => (
                     <option key={plc.id} value={plc.id}>
                       {plc.name === '-- Seleccionar Equipo Guardado --' 
-                        ? '-- Crear Nueva Conexión --' 
+                        ? t.plNewConnection
                         : plc.name}
                     </option>
                   ))}
@@ -679,18 +687,18 @@ function PlcDashboardContent() {
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
                 <h3 className="text-[#312011] font-bold text-sm mb-3 flex items-center gap-2 font-serif uppercase">
-                  <span className="text-[#A3855B]">❂</span> Sendas de Conexión
+                  <span className="text-[#A3855B]">❂</span> {t.plConnectionPaths}
                 </h3>
                 <div className="text-[#4B3B2B] text-xs font-medium space-y-3 leading-relaxed">
-                  <p><strong className="text-[#312011]">Templo Reliquia:</strong> La ofrenda (equipo Azteq-IA) se hace en el mismo suelo sagrado (LAN) que el {brandInfo.name}.</p>
-                  <p><strong className="text-[#312011]">Cielo Puro:</strong> La comunicación viaja por los vientos a través de un túnel místico (VPN) que prroveen los guardianes de red.</p>
+                  <p><strong className="text-[#312011]">{t.plLocalMode}:</strong> {t.plLocalModeDesc} {brandInfo.name}.</p>
+                  <p><strong className="text-[#312011]">{t.plCloudMode}:</strong> {t.plCloudModeDesc}</p>
                 </div>
                 <button
                   onClick={() => router.push('/planta/ayuda')}
                   className="mt-4 text-[#A3855B] text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1 transition-colors hover:text-[#69523C]"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Leer más: Guía completa de conexión paso a paso &rarr;
+                  {t.plReadMore} &rarr;
                 </button>
               </div>
             )}
@@ -699,7 +707,7 @@ function PlcDashboardContent() {
 
               {/* Selector de Modelo Físico */}
               <div className="flex flex-col gap-1.5 relative z-10 mb-2">
-                <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Familia / Protocolo del Controlador</label>
+                <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plControllerFamily}</label>
                 <div className="relative">
                   <select 
                     value={plcModel}
@@ -729,14 +737,14 @@ function PlcDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <p className="text-xs text-[#312011] font-medium leading-relaxed">
-                    <strong>Túnel de Vientos:</strong> La IP debe pertenecer al túnel cifrado (VPN), no a la aldea local (LAN) de la fábrica.
+                    <strong>Túnel de Vientos:</strong> {t.plVpnNote}
                   </p>
                 </div>
               )}
 
               <div className="flex flex-col gap-1.5 relative z-10">
                 <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">
-                  {connectionMode === 'local' ? 'IP de Ofrenda (LAN)' : 'IP de Túnel (VPN)'}
+                  {connectionMode === 'local' ? t.plIpLocal : t.plIpVpn}
                 </label>
                 <input 
                   type="text" 
@@ -750,7 +758,7 @@ function PlcDashboardContent() {
               </div>
 
               <div className="flex flex-col gap-1.5 relative z-10">
-                <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Puerta de Acceso (Puerto)</label>
+                <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plPortLabel}</label>
                 <input 
                   type="text" 
                   value={port}
@@ -764,7 +772,7 @@ function PlcDashboardContent() {
               {brandId === 'siemens' && (
                 <div className="grid grid-cols-2 gap-4 relative z-10">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Nivel (Rack)</label>
+                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plRackLabel}</label>
                     <input 
                       type="number" 
                       value={rack}
@@ -774,7 +782,7 @@ function PlcDashboardContent() {
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Piedra (Slot)</label>
+                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSlotLabel}</label>
                     <input 
                       type="number" 
                       value={slot}
@@ -795,11 +803,11 @@ function PlcDashboardContent() {
                 {isConnecting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-[#E8C673]/20 border-t-[#E8C673] rounded-full animate-spin"></div>
-                    INVOCANDO...
+                    {t.plConnecting}
                   </>
                 ) : (
                   <>
-                    REALIZAR ENLACE
+                    {t.plConnect}
                     <svg className="w-5 h-5 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   </>
                 )}
@@ -820,8 +828,7 @@ function PlcDashboardContent() {
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <h2 className="text-white font-bold tracking-wider flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
-                  MONITOREO EN TIEMPO REAL
-                </h2>
+                  {t.plRealTimeMonitoring}                </h2>
                 {selectedPlcId && newPlcName && (
                   <div className="text-xs text-white/60 font-mono mt-1 ml-7">
                     PLC: {newPlcName}
@@ -839,7 +846,7 @@ function PlcDashboardContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    Ajustar E/S
+                    {t.plAdjustIO}
                   </button>
 
                   <span className="text-xs font-mono text-white/40 bg-black/30 px-2 py-1 rounded hidden sm:inline-block">{ipAddress}:{port}</span>
@@ -847,7 +854,7 @@ function PlcDashboardContent() {
                     <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1">
                       <input 
                         type="text"
-                        placeholder="Nombre para guardar..."
+                        placeholder={t.plSaveName}
                         value={newPlcName}
                         onChange={(e) => setNewPlcName(e.target.value)}
                         className="bg-transparent text-xs text-white px-2 focus:outline-none w-36 placeholder-white/30"
@@ -857,7 +864,7 @@ function PlcDashboardContent() {
                         disabled={isSaving || !newPlcName.trim()}
                         className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:bg-gray-600 disabled:text-gray-400 text-black text-[10px] font-bold px-3 py-1.5 rounded transition-colors tracking-widest"
                       >
-                         {isSaving ? '...' : 'GUARDAR'}
+                         {isSaving ? '...' : t.plSave}
                       </button>
                     </div>
                   )}
@@ -868,7 +875,7 @@ function PlcDashboardContent() {
               {ioTags.length > 0 ? (
                 <>
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estado Conexión</span>
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plConnectionStatus}</span>
                     <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral?.includes('OPERATIVO') ? 'text-green-400' : 'text-red-400'}`}>
                       {plcData?.estatusGeneral ?? 'No Conectado'}
                     </span>
@@ -887,24 +894,24 @@ function PlcDashboardContent() {
                 <>
                   {/* Cuadro de Sensor 1 */}
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Temperatura CPU</span>
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plCpuTemp}</span>
                     <span className="text-3xl font-black text-white">{plcData?.temperaturaCpu ?? '--'}<span className="text-lg text-white/40">°C</span></span>     
                   </div>
                   {/* Cuadro de Sensor 2 */}
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Presión Sistema</span>
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plSystemPressure}</span>
                     <span className="text-3xl font-black text-white">{plcData?.presionSistema ?? '--'}<span className="text-lg text-white/40">bar</span></span>     
                   </div>
                   {/* Cuadro de Sensor 3 */}
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Estatus General</span>
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plGeneralStatus}</span>
                     <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral === 'OPERATIVO' ? 'text-green-400' : 'text-red-400'}`}>
                       {plcData?.estatusGeneral ?? '--'}
                     </span>
                   </div>
                   {/* Cuadro de Sensor 4 */}
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Ciclos / Hora</span>
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plCyclesPerHour}</span>
                     <span className="text-3xl font-black text-white">{plcData?.ciclosPorHora?.toLocaleString() ?? '--'}</span>
                   </div>
                 </>
@@ -912,12 +919,12 @@ function PlcDashboardContent() {
               {/* Mensaje Largo */}
               <div className={`${plcWarning?.includes('0x8104') ? 'bg-red-900/30 border-red-500/40' : 'bg-white/5 border-white/10'} border rounded-2xl p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-2 hover:bg-white/10 transition-colors`}>
                 <span className={`${plcWarning?.includes('0x8104') ? 'text-red-400' : 'text-white/50'} text-[10px] font-bold uppercase tracking-widest mb-2`}>
-                  {plcWarning?.includes('0x8104') ? '⚠ Error de Acceso PLC' : 'Alarma Predictiva'}
+                  {plcWarning?.includes('0x8104') ? t.plAccessError : t.plPredictiveAlarm}
                 </span>
                 <span className={`text-sm font-light ${plcWarning?.includes('0x8104') ? 'text-red-200' : 'text-white/80'} mt-1`}>
                   {plcWarning
                     ? plcWarning
-                    : `El sistema ${brandInfo.name} no presenta anomalías en la última lectura. Todo rinde al 98% de su capacidad.`
+                    : `${brandInfo.name} ${t.plAllNormal}`
                   }
                 </span>
               </div>
@@ -936,7 +943,7 @@ function PlcDashboardContent() {
               </div>
               
               <p className="text-white/40 text-xs font-light mb-4 uppercase tracking-widest">
-                Asistente en vivo conectado a {brandInfo.name}
+                {t.plLiveAssistant} {brandInfo.name}
               </p>
 
               <div className="flex-1 bg-black/60 rounded-2xl border border-white/5 p-4 flex flex-col h-full overflow-hidden relative">
@@ -944,7 +951,7 @@ function PlcDashboardContent() {
                 <div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-2 pb-4">
                   {chatMessages.length === 0 && (
                     <div className="bg-white/10 text-white/90 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start w-11/12 border border-white/5 backdrop-blur-sm">
-                      Hola. Soy la IA de Azteq conectada a <b>{brandInfo.name}</b>. ¿En qué puedo ayudarte?
+                      {t.plAiGreeting} <b>{brandInfo.name}</b>{t.plAiGreetingEnd}
                     </div>
                   )}
                   {chatMessages.map((msg, i) => (
@@ -958,7 +965,7 @@ function PlcDashboardContent() {
                   ))}
                   {chatLoading && (
                     <div className="bg-white/5 text-white/40 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start animate-pulse">
-                      Analizando...
+                      {t.plAnalyzing}
                     </div>
                   )}
                 </div>
@@ -970,7 +977,7 @@ function PlcDashboardContent() {
                     value={chatInput}
                     onChange={e => setChatInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleChatSend()}
-                    placeholder={`Pregunta sobre el sistema ${brandInfo.name}...`}
+                    placeholder={`${t.plChatPlaceholder} ${brandInfo.name}...`}
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light"
                     disabled={chatLoading}
                   />

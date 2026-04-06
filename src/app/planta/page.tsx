@@ -52,7 +52,7 @@ export default function PlantaBrandSelection() {
           onClick={() => router.push('/')}
           className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
         >
-          <span>← Volver</span>
+          <span>{t.piBack}</span>
         </button>
         <div className="flex items-center gap-4">
           <LanguageSelector />
@@ -63,9 +63,9 @@ export default function PlantaBrandSelection() {
             title="Ver ayuda y documentación de conexión"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 14h.01M16 10h.01M12 18h.01M12 6h.01" /></svg>
-            Ayuda
+            {t.piHelp}
           </button>
-          <span className="text-[#D4AF37] font-bold text-sm tracking-widest uppercase shadow-sm">IA Planta</span>
+          <span className="text-[#D4AF37] font-bold text-sm tracking-widest uppercase shadow-sm">{t.piIaPlanta}</span>
         </div>
       </header>
 
@@ -88,16 +88,16 @@ export default function PlantaBrandSelection() {
           >
             <span className="relative z-10 flex items-center gap-2">
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-               Abrir Visión Global (Dashboard)
+               {t.piOpenDashboard}
             </span>
             <div className="absolute inset-0 w-full h-full bg-[#D4AF37]/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] z-0"></div>
           </button>
 
           <h1 className="text-3xl md:text-5xl font-bold text-white tracking-widest uppercase mb-4 drop-shadow-md mt-4">
-            Selecciona el PLC
+            {t.piSelectPLC}
           </h1>
           <p className="text-white/60 text-sm md:text-base max-w-lg mx-auto font-light leading-relaxed">
-            Elige la marca del controlador lógico programable al que la IA Planta deberá conectarse y analizar de forma individual.
+            {t.piSelectPLCDesc}
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export default function PlantaBrandSelection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-wider mb-1">{brand.name}</h3>
-                  <p className="text-white/40 text-xs font-light uppercase tracking-widest">Conexión Industrial</p>
+                  <p className="text-white/40 text-xs font-light uppercase tracking-widest">{t.piIndustrialConnection}</p>
                 </div>
               </div>
 
