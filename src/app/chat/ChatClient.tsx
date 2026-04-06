@@ -21,6 +21,8 @@ export default function ChatClient() {
   const [chats, setChats] = useState<{id: string, title: string}[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -83,6 +85,37 @@ export default function ChatClient() {
       setMessages(data.map(m => ({ role: m.role, content: m.content || '', image: m.image_url })));
     }
     setSidebarOpen(false);
+  };
+
+  const deleteChat = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('¿Estás seguro de que quieres eliminar este chat?')) return;
+    
+    await supabase.from('chats').delete().eq('id', id);
+    
+    setChats(chats.filter(c => c.id !== id));
+    if (currentChatId === id) {
+      setCurrentChatId(null);
+      setMessages([]);
+    }
+  };
+
+  const startRename = (chat: {id: string, title: string}, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingChatId(chat.id);
+    setEditingTitle(chat.title);
+  };
+
+  const saveRename = async (id: string) => {
+    if (!editingTitle.trim()) {
+      setEditingChatId(null);
+      return;
+    }
+    
+    await supabase.from('chats').update({ title: editingTitle }).eq('id', id);
+    
+    setChats(chats.map(c => c.id === id ? { ...c, title: editingTitle } : c));
+    setEditingChatId(null);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,22 +233,26 @@ export default function ChatClient() {
   return (
     <div className="flex w-full overflow-hidden absolute inset-0">
       
-      {/* Botón flotante para abrir sidebar (Móviles) */}
-      <button 
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed top-[15px] left-4 z-[60] bg-[#121927] border-[2px] border-[#E8C673] p-2 text-[#E8C673] rounded-md shadow-lg"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
-      </button>
+      {/* Botones Flotantes Izquierda (Sidebar) */}
+      <div className="fixed top-[100px] left-4 sm:left-6 z-[60] flex flex-col gap-3">
+        {/* Abrir Historial */}
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="bg-[#121927]/80 backdrop-blur-md border-[2px] border-[#E8C673] p-2 text-[#E8C673] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.6)] hover:bg-[#E8C673]/20 transition-all flex items-center justify-center"
+          title="Ver Chats"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+      </div>
 
       {/* --- CÓDIGO DE LA BARRA LATERAL --- */}
       <div className={`
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        md:translate-x-0 transition-transform duration-300 ease-in-out
-        absolute md:relative z-[50] h-full w-[280px] bg-[#1a2333] border-r-[4px] border-[#69523C] 
-        flex flex-col shadow-[15px_0_30px_rgba(0,0,0,0.8)]
+        transition-transform duration-300 ease-in-out
+        absolute z-[65] h-[calc(100%-120px)] top-[100px] left-0 w-[280px] bg-[#1a2333]/95 backdrop-blur-xl border-y-[3px] border-r-[3px] border-[#69523C] 
+        flex flex-col shadow-[15px_0_30px_rgba(0,0,0,0.8)] rounded-r-2xl
       `}>
         <div className="p-4 border-b-[2px] border-[#69523C]">
           <button 
@@ -231,25 +268,62 @@ export default function ChatClient() {
             <p className="text-center text-[#E8C673]/50 text-xs italic mt-4">Sin chats recientes</p>
           ) : (
             chats.map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => loadChat(chat.id)}
-                className={`w-full text-left truncate px-4 py-3 text-sm rounded transition-colors ${
+              <div 
+                key={chat.id} 
+                className={`w-full group flex items-center justify-between px-2 py-2 text-sm rounded transition-colors cursor-pointer ${
                   currentChatId === chat.id 
-                  ? 'bg-[#E8C673]/20 text-[#E8C673] border-l-[3px] border-[#E8C673]' 
-                  : 'text-gray-300 hover:bg-[#2A374A] border-l-[3px] border-transparent'
+                  ? 'bg-[#E8C673]/20 border-l-[3px] border-[#E8C673]' 
+                  : 'hover:bg-[#2A374A] border-l-[3px] border-transparent'
                 }`}
+                onClick={() => { if (editingChatId !== chat.id) loadChat(chat.id); }}
               >
-                {chat.title}
-              </button>
+                {editingChatId === chat.id ? (
+                  <input
+                    autoFocus
+                    value={editingTitle}
+                    onChange={e => setEditingTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveRename(chat.id); if (e.key === 'Escape') setEditingChatId(null); }}
+                    onBlur={() => saveRename(chat.id)}
+                    className="flex-1 bg-[#121927] text-white px-2 py-1 rounded border border-[#E8C673] focus:outline-none w-[100px]"
+                    onClick={e => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className={`truncate flex-1 px-2 text-left ${currentChatId === chat.id ? 'text-[#E8C673]' : 'text-gray-300'}`}>
+                    {chat.title}
+                  </span>
+                )}
+                
+                {editingChatId !== chat.id && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
+                    <button 
+                      onClick={(e) => startRename(chat, e)} 
+                      className="p-1 hover:text-[#E8C673] transition-colors"
+                      title="Renombrar"
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={(e) => deleteChat(chat.id, e)} 
+                      className="p-1 hover:text-red-400 transition-colors"
+                      title="Eliminar"
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Fondo oscuro para cerrar en móvil */}
+      {/* Fondo oscuro para cerrar al hacer clic afuera */}
       {sidebarOpen && (
-         <div onClick={() => setSidebarOpen(false)} className="md:hidden fixed inset-0 bg-black/60 z-[40]"></div>
+         <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-[50] backdrop-blur-sm"></div>
       )}
 
       {/* --- REEMPLAZO DEL CONTENEDOR PRINCIPAL ORIGINAL --- */}
@@ -401,7 +475,19 @@ export default function ChatClient() {
             </div>
           )}
 
-          <div className="flex gap-4 w-full items-end">
+          <div className="flex gap-2 sm:gap-4 w-full items-end">
+            
+            <button
+              onClick={createNewChat}
+              className="bg-[#A3855B] text-[#FCFAEA] px-3 md:px-4 py-[14px] hover:bg-[#8B6E4A] transition-all border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] flex items-center justify-center shrink-0"
+              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
+              title={t.newChat || 'Nuevo Chat'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+
             <input 
               type="file" 
               accept="image/*" 
@@ -412,7 +498,7 @@ export default function ChatClient() {
             <button
               onClick={() => fileInputRef.current?.click()}
               className="bg-[#121927] text-[#E8C673] px-3 md:px-4 py-[14px] hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] flex items-center justify-center shrink-0"
-              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
+              style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}
               disabled={loading}
               title="Adjuntar imagen"
             >

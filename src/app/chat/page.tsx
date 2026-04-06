@@ -42,7 +42,7 @@ export default function ChatPage() {
     <div className="h-screen w-full bg-[#111] flex flex-col relative overflow-hidden bg-no-repeat bg-center bg-[url('/aztec_chat_phone.png')] md:bg-[url('/Chat-Azteq.png')] bg-[length:100%_100%]">
 
       {/* Botón de retorno y Cambio de Lenguaje */}
-      <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 z-50 flex justify-between items-start pointer-events-none">
+      <div className="absolute top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-6 z-[70] flex justify-between items-start pointer-events-none">
         
         <div className="pointer-events-auto flex items-center gap-4">
           <Link href="/" className="group relative flex items-center gap-3 bg-black/60 backdrop-blur-md border border-[#0D9488]/30 px-5 py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.6)] hover:bg-[#0D9488]/10 hover:border-[#D4AF37]/50 hover:shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all overflow-hidden">
