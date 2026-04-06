@@ -178,7 +178,7 @@ export default function ChatClient() {
         setMessages((prev) => [...prev, { role: 'ai', content: '⚠ Error: ' + data.error }]);
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { role: 'ai', content: t.errorCon }]);
+      setMessages((prev) => [...prev, { role: 'ai', content: t?.errorCon }]);
     }
     setLoading(false);
   };
@@ -259,7 +259,7 @@ export default function ChatClient() {
             onClick={createNewChat}
             className="w-full flex items-center justify-center gap-2 bg-[#A3855B] text-[#FCFAEA] py-3 rounded text-[13px] font-bold uppercase tracking-widest border-[2px] border-[#E8C673]/50 hover:bg-[#8B6E4A] transition-colors"
           >
-            <span>+</span> {t.newChat || 'Nuevo Chat'}
+            <span>+</span> {(t as any)?.newChat || 'Nuevo Chat'}
           </button>
         </div>
 
@@ -341,7 +341,7 @@ export default function ChatClient() {
         {/* Etiqueta Superior */}
         <div className="absolute left-1/2 -top-[2px] -translate-x-1/2 bg-[#121927] border-x-[3px] border-b-[3px] border-[#E8C673] px-8 py-1.5 shadow-[0_4px_10px_rgba(0,0,0,0.5)] z-20 flex items-center justify-center min-w-[220px]" style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 100%, 0 100%)' }}>
           <span className="text-[#E8C673] text-[16px] mr-2">❂</span>
-          <span className="text-[#E8C673] font-bold text-[14px] tracking-[0.2em] uppercase">{t.expertBadge}</span>
+          <span className="text-[#E8C673] font-bold text-[14px] tracking-[0.2em] uppercase">{t?.expertBadge}</span>
         </div>
 
         {/* Zona de Mensajes */}
@@ -349,9 +349,9 @@ export default function ChatClient() {
 
           {messages.length === 0 ? (
             <div className="text-center w-full mx-auto my-auto flex flex-col items-center justify-center">
-              <h2 className="font-bold text-[28px] mb-3 text-[#312011] tracking-tight">{t.hello}</h2>
+              <h2 className="font-bold text-[28px] mb-3 text-[#312011] tracking-tight">{t?.hello}</h2>
               <p className="text-[#4B3B2B] leading-relaxed text-[16px] max-w-xl mx-auto font-medium">
-                {t.helloDesc}
+                {t?.helloDesc}
               </p>
             </div>
           ) : (
@@ -446,7 +446,7 @@ export default function ChatClient() {
                       <div className="w-2 h-2 bg-[#9B8161] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <div className="w-2 h-2 bg-[#9B8161] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                     </span>
-                    <span className="font-medium">{t.thinking}</span>
+                    <span className="font-medium">{t?.thinking}</span>
                   </div>
                 </div>
               )}
@@ -481,7 +481,7 @@ export default function ChatClient() {
               onClick={createNewChat}
               className="bg-[#A3855B] text-[#FCFAEA] px-3 md:px-4 py-[14px] hover:bg-[#8B6E4A] transition-all border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] flex items-center justify-center shrink-0"
               style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
-              title={t.newChat || 'Nuevo Chat'}
+              title={(t as any)?.newChat || 'Nuevo Chat'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -510,7 +510,7 @@ export default function ChatClient() {
             <textarea
               className="flex-1 bg-[#F2EADA] border-b-[4px] border-r-[4px] border-[#A3855B] text-[#312011] placeholder-[#87705B] px-6 py-[14px] focus:outline-none focus:bg-[#FCFAEA] transition-all font-sans text-[14px] md:text-[16px] shadow-inner font-medium resize-none min-h-[52px] max-h-[150px] overflow-y-auto"
               style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}
-              placeholder={t.placeholder}
+              placeholder={t?.placeholder}
               value={input}
               rows={1}
               onChange={(e) => {
@@ -559,7 +559,7 @@ export default function ChatClient() {
               className="group relative bg-[#121927] text-[#E8C673] font-bold tracking-[0.2em] px-8 md:px-10 py-[14px] uppercase hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px] border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] shrink-0"  
               style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
             >
-              {t.send}
+              {t?.send}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E8C673] to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-sm"></div>
             </button>
           </div>
