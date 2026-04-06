@@ -24,6 +24,23 @@ const CHUNK_SOLAPAMIENTO = 150;  // solapamiento para no perder contexto entre f
 const PAUSA_MS = 250;            // pausa entre llamadas a OpenAI (evita rate limit)
 const TEXTO_MINIMO = 100;        // si el PDF tiene menos caracteres, se asume que está escaneado
 
+// Factory necesaria para que pdfjs-dist pueda renderizar páginas en Node.js
+class NodeCanvasFactory {
+  create(width, height) {
+    const canvas = createCanvas(width, height);
+    const context = canvas.getContext('2d');
+    return { canvas, context };
+  }
+  reset(canvasAndContext, width, height) {
+    canvasAndContext.canvas.width = width;
+    canvasAndContext.canvas.height = height;
+  }
+  destroy(canvasAndContext) {
+    canvasAndContext.canvas.width = 0;
+    canvasAndContext.canvas.height = 0;
+  }
+}
+
 // Divide un texto largo en fragmentos con solapamiento
 function dividirEnChunks(texto, tamaño, solapamiento) {
   const chunks = [];
@@ -50,38 +67,36 @@ async function extraerTextoNormal(pdfDoc) {
   return texto;
 }
 
-// Renderiza una página PDF a canvas usando pdfjs-dist + canvas (Node.js)
-async function renderizarPaginaACanvas(pdfDoc, numeroPagina) {
+// Renderiza una página PDF y retorna el PNG como Uint8Array en memoria
+async function renderizarPaginaAPNG(pdfDoc, numeroPagina) {
   const pagina = await pdfDoc.getPage(numeroPagina);
-  const escala = 2.0; // más escala = mejor calidad de OCR
+  const escala = 2.0;
   const viewport = pagina.getViewport({ scale: escala });
 
   const canvas = createCanvas(viewport.width, viewport.height);
   const contexto = canvas.getContext('2d');
 
-  await pagina.render({
-    canvasContext: contexto,
-    viewport,
-  }).promise;
+  await pagina.render({ canvasContext: contexto, viewport }).promise;
 
-  // Devolvemos el canvas directamente (Tesseract.js lo acepta nativo)
-  return canvas;
+  // Uint8Array funciona con Tesseract.js en Node.js
+  const buffer = canvas.toBuffer('image/png');
+  return new Uint8Array(buffer);
 }
 
-// OCR de un PDF escaneado: convierte cada página a imagen y le aplica Tesseract
+// OCR de un PDF escaneado: convierte cada página a PNG y aplica Tesseract
 async function extraerTextoConOCR(pdfDoc) {
   console.log('   🔍 PDF escaneado detectado. Aplicando OCR...');
 
   const totalPaginas = pdfDoc.numPages;
   console.log(`   → ${totalPaginas} página(s) para procesar con OCR`);
 
-  const worker = await createWorker('spa+eng'); // español + inglés
+  const worker = await createWorker('spa+eng');
   let textoCompleto = '';
 
   for (let i = 1; i <= totalPaginas; i++) {
     process.stdout.write(`   🖼  Página ${i}/${totalPaginas}...\r`);
-    const canvas = await renderizarPaginaACanvas(pdfDoc, i);
-    const { data } = await worker.recognize(canvas);
+    const pngData = await renderizarPaginaAPNG(pdfDoc, i);
+    const { data } = await worker.recognize(pngData);
     textoCompleto += data.text + '\n';
   }
 
@@ -108,7 +123,10 @@ async function procesarArchivo(rutaArchivo) {
   try {
     if (ext === '.pdf') {
       const buffer = readFileSync(rutaArchivo);
-      const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+      const pdfDoc = await pdfjsLib.getDocument({
+        data: new Uint8Array(buffer),
+        canvasFactory: new NodeCanvasFactory(),
+      }).promise;
 
       // Intentar extracción de texto normal
       texto = await extraerTextoNormal(pdfDoc);
@@ -137,36 +155,48 @@ async function procesarArchivo(rutaArchivo) {
   const chunks = dividirEnChunks(texto, CHUNK_TAMAÑO, CHUNK_SOLAPAMIENTO);
   console.log(`   → ${chunks.length} fragmentos a ingestar...`);
 
+  const BATCH_OPENAI = 20;   // embeddings por llamada a OpenAI
+  const BATCH_SUPABASE = 50; // filas por insert a Supabase
   let exitosos = 0;
   let fallidos = 0;
+  const pendientesSupabase = [];
 
-  for (let i = 0; i < chunks.length; i++) {
+  // 1. Generar todos los embeddings en lotes
+  for (let i = 0; i < chunks.length; i += BATCH_OPENAI) {
+    const lote = chunks.slice(i, i + BATCH_OPENAI);
     try {
       const resp = await openai.embeddings.create({
         model: 'text-embedding-3-small',
-        input: chunks[i],
+        input: lote,
       });
-      const embedding = resp.data[0].embedding;
-
-      const { error } = await supabase.from('documentos').insert({
-        contenido: chunks[i],
-        embedding: embedding,
-        fuente: nombre,
-      });
-
-      if (error) {
-        console.error(`\n   ❌ Error Supabase en chunk ${i + 1}: ${error.message}`);
-        fallidos++;
-      } else {
-        exitosos++;
-        process.stdout.write(`   ✅ ${exitosos}/${chunks.length} fragmentos guardados\r`);
+      for (let j = 0; j < lote.length; j++) {
+        pendientesSupabase.push({
+          contenido: lote[j],
+          embedding: resp.data[j].embedding,
+          fuente: nombre,
+        });
       }
+      process.stdout.write(`   🔄 Embeddings: ${Math.min(i + BATCH_OPENAI, chunks.length)}/${chunks.length}\r`);
     } catch (err) {
-      console.error(`\n   ❌ Error OpenAI en chunk ${i + 1}: ${err.message}`);
-      fallidos++;
+      console.error(`\n   ❌ Error OpenAI en lote ${i}: ${err.message}`);
+      fallidos += lote.length;
     }
-
     await new Promise(r => setTimeout(r, PAUSA_MS));
+  }
+
+  console.log(`\n   → Guardando ${pendientesSupabase.length} fragmentos en Supabase...`);
+
+  // 2. Insertar en Supabase en lotes
+  for (let i = 0; i < pendientesSupabase.length; i += BATCH_SUPABASE) {
+    const lote = pendientesSupabase.slice(i, i + BATCH_SUPABASE);
+    const { error } = await supabase.from('documentos').insert(lote);
+    if (error) {
+      console.error(`\n   ❌ Error Supabase en lote ${i}: ${error.message}`);
+      fallidos += lote.length;
+    } else {
+      exitosos += lote.length;
+      process.stdout.write(`   ✅ ${exitosos}/${pendientesSupabase.length} guardados\r`);
+    }
   }
 
   console.log(`\n   ✔ Completado: ${exitosos} guardados, ${fallidos} fallidos.`);
