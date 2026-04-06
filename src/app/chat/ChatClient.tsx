@@ -12,9 +12,11 @@ import 'katex/dist/katex.min.css';
 export default function ChatClient() {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
+  const [messages, setMessages] = useState<{role: 'user'|'ai', content: string, image?: string | null}[]>([]);
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +28,21 @@ export default function ChatClient() {
     scrollToBottom();
   }, [messages, loading]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("La imagen es demasiado grande. El máximo es 5MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Pre-procesar texto de la IA para convertir delimitadores \( \) a $ de KaTeX
   const preprocessMath = (text: string) => {
     return text
@@ -33,7 +50,7 @@ export default function ChatClient() {
       .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$'); // Block math: \[...\] -> $$...$$
   };
 
-  const sendMessageAPI = async (userMsg: string) => {
+  const sendMessageAPI = async (userMsg: string, imageBase64?: string | null) => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -42,7 +59,7 @@ export default function ChatClient() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, userEmail })
+        body: JSON.stringify({ message: userMsg, userEmail, image: imageBase64 })
       });
 
       const data = await res.json();
@@ -59,11 +76,22 @@ export default function ChatClient() {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !selectedImage) return;
     const userMsg = input;
+    const imgToSend = selectedImage;
+    
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', content: userMsg }]);
-    await sendMessageAPI(userMsg);
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    
+    setMessages((prev) => [
+      ...prev, 
+      { role: 'user', content: userMsg, image: imgToSend }
+    ]);
+    
+    await sendMessageAPI(userMsg, imgToSend);
   };
 
   const handleEdit = (index: number) => {
@@ -137,6 +165,11 @@ export default function ChatClient() {
                         : 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))'
                     }}
                   >
+                    {msg.image && (
+                      <div className="mb-3 border-2 border-[#E5DBCA]/30 rounded overflow-hidden shadow-inner">
+                        <img src={msg.image} alt="User Upload" className="w-full h-auto max-h-[300px] object-cover" />
+                      </div>
+                    )}
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}
@@ -219,41 +252,101 @@ export default function ChatClient() {
         </div>
 
         {/* Input / Botón */}
-        <div className="px-6 md:px-10 pb-[24px] pt-4 flex gap-4 w-full bg-[#D1C3AD]/50 border-t-4 border-[#A3855B] relative z-10 items-end">
-          <textarea
-            className="flex-1 bg-[#F2EADA] border-b-[4px] border-r-[4px] border-[#A3855B] text-[#312011] placeholder-[#87705B] px-6 py-[14px] focus:outline-none focus:bg-[#FCFAEA] transition-all font-sans text-[14px] md:text-[16px] shadow-inner font-medium resize-none min-h-[52px] max-h-[150px] overflow-y-auto"
-            style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}
-            placeholder={t.placeholder}
-            value={input}
-            rows={1}
-            onChange={(e) => {
-              setInput(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
+        <div className="px-6 md:px-10 pb-[24px] pt-4 flex flex-col gap-4 w-full bg-[#D1C3AD]/50 border-t-4 border-[#A3855B] relative z-10">
+          
+          {selectedImage && (
+            <div className="relative inline-block w-fit">
+              <img src={selectedImage} alt="Preview" className="h-20 rounded border-2 border-[#A3855B] object-cover" />
+              <button 
+                onClick={() => {
+                  setSelectedImage(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-4 w-full items-end">
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleImageSelect} 
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-[#121927] text-[#E8C673] px-3 md:px-4 py-[14px] hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] flex items-center justify-center shrink-0"
+              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
+              disabled={loading}
+              title="Adjuntar imagen"
+            >
+              <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </button>
+
+            <textarea
+              className="flex-1 bg-[#F2EADA] border-b-[4px] border-r-[4px] border-[#A3855B] text-[#312011] placeholder-[#87705B] px-6 py-[14px] focus:outline-none focus:bg-[#FCFAEA] transition-all font-sans text-[14px] md:text-[16px] shadow-inner font-medium resize-none min-h-[52px] max-h-[150px] overflow-y-auto"
+              style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}
+              placeholder={t.placeholder}
+              value={input}
+              rows={1}
+              onChange={(e) => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+              }}
+              onPaste={(e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                  if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                      e.preventDefault();
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert("La imagen es demasiado grande. El máximo es 5MB.");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setSelectedImage(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                      break;
+                    }
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                  e.currentTarget.style.height = 'auto';
+                }
+              }}
+              disabled={loading}
+            />
+            <button
+              onClick={() => {
                 handleSend();
-                e.currentTarget.style.height = 'auto';
-              }
-            }}
-            disabled={loading}
-          />
-          <button
-            onClick={() => {
-              handleSend();
-              // Reiniciamos altura si es posible obteniendo el textarea
-              const textarea = document.querySelector('textarea');
-              if (textarea) textarea.style.height = 'auto';
-            }}
-            disabled={loading || !input.trim()}
-            className="group relative bg-[#121927] text-[#E8C673] font-bold tracking-[0.2em] px-8 md:px-10 py-[14px] uppercase hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px] border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] shrink-0"  
-            style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
-          >
-            {t.send}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E8C673] to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-sm"></div>
-          </button>
+                const textarea = document.querySelector('textarea');
+                if (textarea) textarea.style.height = 'auto';
+              }}
+              disabled={loading || (!input.trim() && !selectedImage)}
+              className="group relative bg-[#121927] text-[#E8C673] font-bold tracking-[0.2em] px-8 md:px-10 py-[14px] uppercase hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px] border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] shrink-0"  
+              style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
+            >
+              {t.send}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E8C673] to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-sm"></div>
+            </button>
+          </div>
         </div>
 
       </div>

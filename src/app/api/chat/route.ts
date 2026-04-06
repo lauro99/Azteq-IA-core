@@ -12,11 +12,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
-    const { message, userEmail } = await request.json();
+    const { message, userEmail, image } = await request.json();
 
     // Validar que el mensaje no esté vacío
-    if (!message) {
-      return NextResponse.json({ error: 'Mensaje vacío' }, { status: 400 });
+    if (!message && !image) {
+      return NextResponse.json({ error: 'Mensaje e imagen vacíos' }, { status: 400 });
     }
 
     // Validar formato de email
@@ -64,29 +64,34 @@ export async function POST(request: Request) {
     // Si ES un admin (adm, adm1, adm2, etc...), nos saltamos la regla anterior y dejamos pasar.
     // -------------------------------------
 
-    // 1. Convertir la pregunta del usuario a vectores matemáticos
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: message,
-    });
-    const embedding = embeddingResponse.data[0].embedding;
-
-    // 2. Buscar en Supabase usando la función que creamos y los vectores
-    const { data: documentos, error } = await supabase.rpc('buscar_documentos', {
-      query_embedding: embedding,
-      match_threshold: 0.5, // Margen de similitud (aumentado de 0.3 para mejor relevancia)
-      match_count: 5 // Traer los 5 párrafos más parecidos
-    });
-
-    if (error) {
-      console.error("Error de Supabase:", error);
-      throw error;
+// 1. Convertir la pregunta del usuario a vectores matemáticos (si existe texto)
+    let embedding = null;
+    if (message) {
+      const embeddingResponse = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: message,
+      });
+      embedding = embeddingResponse.data[0].embedding;
     }
 
-    // 3. Juntar todos los párrafos encontrados en un solo texto
+    // 2. Buscar en Supabase usando la función que creamos y los vectores
     let manualesTexto = "";
-    if (documentos && documentos.length > 0) {
-      manualesTexto = documentos.map((doc: any) => doc.contenido).join('\n\n');
+    if (embedding) {
+      const { data: documentos, error } = await supabase.rpc('buscar_documentos', {
+        query_embedding: embedding,
+        match_threshold: 0.5, // Margen de similitud (aumentado de 0.3 para mejor relevancia)
+        match_count: 5 // Traer los 5 párrafos más parecidos
+      });
+
+      if (error) {
+        console.error("Error de Supabase:", error);
+        throw error;
+      }
+
+      // 3. Juntar todos los párrafos encontrados en un solo texto
+      if (documentos && documentos.length > 0) {
+        manualesTexto = documentos.map((doc: { contenido: string }) => doc.contenido).join('\n\n');
+      }
     }
 
     // 4. Instrucción secreta para la IA (con la regla híbrida)
@@ -104,11 +109,27 @@ Debes usar EXPLÍCITAMENTE signos de dólar:
 - Para fórmulas en su propia línea o bloque usa doble dólar \`$$ ... $$\` (Ejemplo: $$\\sqrt{2}$$).`;
 
     // 5. Enviar a ChatGPT (GPT-4o-mini) para generar la respuesta final
+    type ChatMessageContent = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+    const userMessageContent: ChatMessageContent[] = [];
+    if (message) {
+      userMessageContent.push({ type: 'text', text: message });
+    } else {
+      userMessageContent.push({ type: 'text', text: "Por favor, analiza la imagen adjunta." });
+    }
+    
+    if (image) {
+      userMessageContent.push({
+        type: 'image_url',
+        // Aseguramos que la URL contenga el Base64 Data URI
+        image_url: { url: image }
+      });
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
+        { role: 'user', content: userMessageContent }
       ],
     });
 
