@@ -63,19 +63,15 @@ function getOrCreateConnection(
   return new Promise((resolve, reject) => {
     const conn = new nodes7({ debug: true });
 
-    // Para S7-1200/1500 se necesitan TSAP explícitos con connection type 0x02
-    // (tipo HMI/OP). El tipo 0x01 (PG) es rechazado por muchos firmwares.
-    // localTSAP = 0x0100 (client), remoteTSAP = 0x0200 + rack*32 + slot
+    // S7-1200: rack=0, slot=1, sin TSAP manual (nodes7 los calcula internamente)
     const connParams: any = {
       port: plcPort,
       host: ip,
       rack: plcRack,
       slot: plcSlot,
-      timeout: 4000,
-      localTSAP: 0x0100,
-      remoteTSAP: 0x0200 + plcRack * 32 + plcSlot,
+      timeout: 8000,
     };
-    console.log(`[Azteq Pool] Conectando con TSAP local=0x${connParams.localTSAP.toString(16)} remote=0x${connParams.remoteTSAP.toString(16)} (rack=${plcRack}, slot=${plcSlot})`);
+    console.log(`[Azteq Pool] Conectando rack=${plcRack} slot=${plcSlot} host=${ip}:${plcPort}`);
 
     conn.initiateConnection(connParams, (err: any) => {
         if (typeof err !== 'undefined') {

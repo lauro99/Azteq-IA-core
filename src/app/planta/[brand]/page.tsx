@@ -58,6 +58,11 @@ function PlcDashboardContent() {
   const [rack, setRack] = useState('0');
   const [slot, setSlot] = useState(brandId === 'siemens' ? '0' : '1');
 
+  const showToast = (msg: string, type: 'success'|'error'|'info' = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   useEffect(() => {
     if (brandId === 'siemens') {
       if (plcModel === 's7-1200' || plcModel === 's7-1500' || plcModel === 'logo') {
@@ -253,11 +258,6 @@ function PlcDashboardContent() {
       </div>
     );
   }
-
-  const showToast = (msg: string, type: 'success'|'error'|'info' = 'info') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const handleChatSend = async () => {
     const trimmed = chatInput.trim();
