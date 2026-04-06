@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join, extname, basename } from 'path';
-import pdfParse from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 import { createCanvas } from 'canvas';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -12,9 +11,11 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Usamos la service_role key para que el script admin pueda insertar sin restricciones de RLS
+// Encuéntrala en: Supabase Dashboard → Project Settings → API → service_role
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const CARPETA_LIBROS = './libros';
@@ -37,8 +38,20 @@ function dividirEnChunks(texto, tamaño, solapamiento) {
   return chunks;
 }
 
-// Renderiza una página PDF a PNG usando pdfjs-dist + canvas
-async function renderizarPaginaAPNG(pdfDoc, numeroPagina) {
+// Extrae texto de un PDF con texto seleccionable usando pdfjs-dist
+async function extraerTextoNormal(pdfDoc) {
+  let texto = '';
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const pagina = await pdfDoc.getPage(i);
+    const contenido = await pagina.getTextContent();
+    const textoPagina = contenido.items.map(item => item.str).join(' ');
+    texto += textoPagina + '\n';
+  }
+  return texto;
+}
+
+// Renderiza una página PDF a canvas usando pdfjs-dist + canvas (Node.js)
+async function renderizarPaginaACanvas(pdfDoc, numeroPagina) {
   const pagina = await pdfDoc.getPage(numeroPagina);
   const escala = 2.0; // más escala = mejor calidad de OCR
   const viewport = pagina.getViewport({ scale: escala });
@@ -51,15 +64,14 @@ async function renderizarPaginaAPNG(pdfDoc, numeroPagina) {
     viewport,
   }).promise;
 
-  return canvas.toBuffer('image/png');
+  // Devolvemos el canvas directamente (Tesseract.js lo acepta nativo)
+  return canvas;
 }
 
 // OCR de un PDF escaneado: convierte cada página a imagen y le aplica Tesseract
-async function extraerTextoConOCR(rutaArchivo) {
+async function extraerTextoConOCR(pdfDoc) {
   console.log('   🔍 PDF escaneado detectado. Aplicando OCR...');
 
-  const buffer = readFileSync(rutaArchivo);
-  const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
   const totalPaginas = pdfDoc.numPages;
   console.log(`   → ${totalPaginas} página(s) para procesar con OCR`);
 
@@ -68,8 +80,8 @@ async function extraerTextoConOCR(rutaArchivo) {
 
   for (let i = 1; i <= totalPaginas; i++) {
     process.stdout.write(`   🖼  Página ${i}/${totalPaginas}...\r`);
-    const pngBuffer = await renderizarPaginaAPNG(pdfDoc, i);
-    const { data } = await worker.recognize(pngBuffer);
+    const canvas = await renderizarPaginaACanvas(pdfDoc, i);
+    const { data } = await worker.recognize(canvas);
     textoCompleto += data.text + '\n';
   }
 
@@ -95,14 +107,15 @@ async function procesarArchivo(rutaArchivo) {
   let texto = '';
   try {
     if (ext === '.pdf') {
-      // Primero intentar extracción de texto normal
       const buffer = readFileSync(rutaArchivo);
-      const resultado = await pdfParse(buffer);
-      texto = resultado.text;
+      const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+
+      // Intentar extracción de texto normal
+      texto = await extraerTextoNormal(pdfDoc);
 
       // Si el texto es muy corto, asumir que es PDF escaneado y usar OCR
       if (!texto || texto.trim().length < TEXTO_MINIMO) {
-        texto = await extraerTextoConOCR(rutaArchivo);
+        texto = await extraerTextoConOCR(pdfDoc);
       } else {
         console.log('   ✅ PDF con texto seleccionable. Extracción directa.');
       }
@@ -138,6 +151,7 @@ async function procesarArchivo(rutaArchivo) {
       const { error } = await supabase.from('documentos').insert({
         contenido: chunks[i],
         embedding: embedding,
+        fuente: nombre,
       });
 
       if (error) {

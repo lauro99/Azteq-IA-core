@@ -5,8 +5,12 @@ create extension if not exists vector;
 create table if not exists documentos (
   id bigserial primary key,
   contenido text,
+  fuente text,         -- nombre del libro/archivo de donde viene este fragmento
   embedding vector(1536) -- 1536 es el tamaño del modelo de embeddings de OpenAI
 );
+
+-- Agregar columna fuente si la tabla ya existe
+alter table documentos add column if not exists fuente text;
 
 -- Índice para búsquedas de similitud en documentos
 create index if not exists idx_documentos_embedding on documentos using ivfflat (embedding vector_cosine_ops) with (lists = 100);
