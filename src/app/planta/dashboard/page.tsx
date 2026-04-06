@@ -81,6 +81,7 @@ export default function PlantDashboard() {
 
   const router = useRouter();
   const [liveData, setLiveData] = useState<Record<string, any>>({});
+  const [plcConnErrors, setPlcConnErrors] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userPLCs, setUserPLCs] = useState<any[]>([]); // Lista real traída de Supabase
@@ -141,13 +142,12 @@ export default function PlantDashboard() {
             })
           });
           const data = await res.json();
-          // Log completo de la respuesta para depuración
-          console.log('Respuesta de /api/plc/connect:', data);
           if (data.success) {
             newData[plc.id] = data.data;
+            // Limpiar error previo si ahora hay éxito
+            setPlcConnErrors(prev => { const e = {...prev}; delete e[plc.id]; return e; });
           } else {
-            // Mostrar alerta con el error exacto recibido
-            alert(`Error leyendo bus de datos: ${data.error || JSON.stringify(data)}`);
+            setPlcConnErrors(prev => ({ ...prev, [plc.id]: data.error || 'Error de conexión' }));
           }
         } catch (error) {
           console.error('Polling error:', error);
@@ -407,11 +407,17 @@ export default function PlantDashboard() {
                                 </div>
                               </div>
                               {/* Foco Titilante Verde/Rojo */}
-                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${plcConnErrors[plc.id] ? 'bg-red-600 shadow-[0_0_12px_#dc2626]' : 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse'}`}></div>
                             </div>
                             {/* ...existing code... */}
                             {/* Visualización profesional de variables */}
                             <div className="mt-2">
+                              {plcConnErrors[plc.id] ? (
+                                <div className="text-xs text-red-400 font-mono bg-red-900/20 border border-red-500/30 rounded p-2 break-all">
+                                  ⚠ {plcConnErrors[plc.id]}
+                                </div>
+                              ) : (
+                              <>
                               <button
                                 className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
                                 onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
@@ -444,6 +450,8 @@ export default function PlantDashboard() {
                                     <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
                                   )}
                                 </div>
+                              )}
+                              </>
                               )}
                             </div>
                           </div>
@@ -501,10 +509,16 @@ export default function PlantDashboard() {
                                 </div>
                               </div>
                               {/* Foco Titilante Verde/Rojo */}
-                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${plcConnErrors[plc.id] ? 'bg-red-600 shadow-[0_0_12px_#dc2626]' : 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse'}`}></div>
                             </div>
                             {/* Visualización profesional de variables */}
                             <div className="mt-2">
+                              {plcConnErrors[plc.id] ? (
+                                <div className="text-xs text-red-400 font-mono bg-red-900/20 border border-red-500/30 rounded p-2 break-all">
+                                  ⚠ {plcConnErrors[plc.id]}
+                                </div>
+                              ) : (
+                              <>
                               <button
                                 className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
                                 onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
@@ -537,6 +551,8 @@ export default function PlantDashboard() {
                                     <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
                                   )}
                                 </div>
+                              )}
+                              </>
                               )}
                             </div>
                           </div>

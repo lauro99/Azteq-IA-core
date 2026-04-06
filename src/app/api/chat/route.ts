@@ -14,8 +14,19 @@ export async function POST(request: Request) {
   try {
     const { message, userEmail } = await request.json();
 
+    // Validar que el mensaje no esté vacío
     if (!message) {
       return NextResponse.json({ error: 'Mensaje vacío' }, { status: 400 });
+    }
+
+    // Validar formato de email
+    if (userEmail && !userEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return NextResponse.json({ error: 'Formato de email inválido' }, { status: 400 });
+    }
+
+    // Validar longitud del mensaje (max 5000 caracteres)
+    if (message.length > 5000) {
+      return NextResponse.json({ error: 'Mensaje demasiado largo (máximo 5000 caracteres)' }, { status: 400 });
     }
 
     // --- LÓGICA DE CONTROL DE MENSAJES ---
@@ -63,7 +74,7 @@ export async function POST(request: Request) {
     // 2. Buscar en Supabase usando la función que creamos y los vectores
     const { data: documentos, error } = await supabase.rpc('buscar_documentos', {
       query_embedding: embedding,
-      match_threshold: 0.3, // Margen de similitud
+      match_threshold: 0.5, // Margen de similitud (aumentado de 0.3 para mejor relevancia)
       match_count: 5 // Traer los 5 párrafos más parecidos
     });
 

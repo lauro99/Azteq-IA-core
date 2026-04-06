@@ -34,7 +34,12 @@ function PlcDashboardContent() {
   const [showHelp, setShowHelp] = useState(false);
   const [connectionMode, setConnectionMode] = useState<'local' | 'cloud'>('local');
   const [plcData, setPlcData] = useState<any>(null);
+  const [plcWarning, setPlcWarning] = useState<string | null>(null);
   const [selectedPlcId, setSelectedPlcId] = useState('');
+  const [chatMessages, setChatMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [toast, setToast] = useState<{msg: string, type: 'success'|'error'|'info'} | null>(null);
   
   // Lista dinámica de PLCs desde Supabase y nuevo nombre
   const [savedPLCs, setSavedPLCs] = useState<any[]>([{ id: '', name: '-- Seleccionar Equipo Guardado --', ip: '', port: '102', rack: '0', slot: '1', is_cloud: false }]);
@@ -83,7 +88,7 @@ function PlcDashboardContent() {
   };
 
   const handleSavePlc = async () => {
-    if (!newPlcName || !ipAddress || !user) return alert("Falta nombre o IP para guardar el PLC");
+    if (!newPlcName || !ipAddress || !user) return showToast("Falta nombre o IP para guardar el PLC", "error"); return;
     
     setIsSaving(true);
     try {
@@ -103,14 +108,14 @@ function PlcDashboardContent() {
 
       if (error) throw error;
       
-      alert(`Reliquia ${newPlcName} guardada con éxito en tu cuenta.`);
+      showToast(`${newPlcName} guardado con éxito`, "success");
       
       if (data && data.length > 0) {
         setSavedPLCs(prev => [...prev, data[0]]);
         setSelectedPlcId(data[0].id);
       }
     } catch (err: any) {
-      alert("Error al guardar PLC en la base de datos: " + err.message);
+      showToast("Error al guardar: " + err.message, "error");
     } finally {
       setIsSaving(false);
     }
@@ -168,7 +173,7 @@ function PlcDashboardContent() {
                     ip: config.ip,
                     port: config.port?.toString() || '102',
                     rack: Number(config.rack) || 0,
-                    slot: Number(config.slot) || 1,
+                    slot: Number(brandId === 'siemens' ? '0' : (config.slot || '1')),
                     isCloud: config.is_cloud,
                     
                     connectOnly: !(config.io_config && config.io_config.length > 0),
@@ -178,12 +183,13 @@ function PlcDashboardContent() {
                 const data = await res.json();
                 if (data.success) {
                   setPlcData(data.data);
+                  setPlcWarning(data.warning || null);
                   setIsConnected(true);
                 } else {
-                  alert(data.error || 'Error conectando al PLC');
+                  showToast(data.error || 'Error conectando al PLC', 'error');
                 }
               } catch (error) {
-                alert('Error de red contactando al servidor');
+                showToast('Error de red contactando al servidor', 'error');
               } finally {
                 setIsConnecting(false);
               }
@@ -216,7 +222,6 @@ function PlcDashboardContent() {
               rack: Number(rack),
               slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
               isCloud: connectionMode === 'cloud',
-              
               connectOnly: ioTags.length === 0,
               ioTags
             })
@@ -224,6 +229,7 @@ function PlcDashboardContent() {
           const data = await res.json();
           if (data.success) {
             setPlcData(data.data);
+            setPlcWarning(data.warning || null);
           } else {
             console.error('Polling error:', data.error);
           }
@@ -232,12 +238,13 @@ function PlcDashboardContent() {
         } finally {
           isFetching = false;
         }
-      }, 2000); // 2 segundos (refresco en tiempo real)
+      }, 3000); // 3 segundos (refresco en tiempo real)
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags]);
 
   if (loading) {
     return (
@@ -246,6 +253,49 @@ function PlcDashboardContent() {
       </div>
     );
   }
+
+  const showToast = (msg: string, type: 'success'|'error'|'info' = 'info') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleChatSend = async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || chatLoading) return;
+
+    // Inject current PLC live data as context
+    let contextPrefix = '';
+    if (plcData) {
+      const vars = plcData.variables || plcData;
+      contextPrefix = '[Contexto en tiempo real del PLC ' + brandInfo.name + ': ' + JSON.stringify(vars) + '] ';
+    }
+
+    const userMsg = trimmed;
+    setChatMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: contextPrefix + userMsg,
+          userEmail: user?.email || ''
+        })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'ai', content: data.error || 'Error al obtener respuesta.' }]);
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'ai', content: 'Error de conexión con la IA.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,12 +320,13 @@ function PlcDashboardContent() {
       
       if (data.success) {
         setPlcData(data.data);
+        setPlcWarning(data.warning || null);
         setIsConnected(true);
       } else {
-        alert(data.error || 'Error conectando al PLC');
+        showToast(data.error || 'Error conectando al PLC', 'error');
       }
     } catch (error) {
-      alert('Error de red contactando al servidor');
+      showToast('Error de red contactando al servidor', 'error');
     } finally {
       setIsConnecting(false);
     }
@@ -501,13 +552,13 @@ function PlcDashboardContent() {
                       setIsSaving(true);
                       supabase.from('plcs').update({ io_config: ioTags }).eq('id', selectedPlcId).then(({ error }) => {
                         setIsSaving(false);
-                        if (error) { alert('Error al guardar I/O: ' + error.message); return; }
-                        alert('¡Mapa I/O guardado en Supabase!');
+                        if (error) { showToast('Error al guardar I/O: ' + error.message, 'error'); return; }
+                        showToast('Mapa I/O guardado correctamente', 'success');
                         setSavedPLCs(prev => prev.map(p => p.id === selectedPlcId ? { ...p, io_config: ioTags } : p));
                         setShowConfigurator(false);
                       });
                     } else {
-                      alert('Primero guarda el PLC (arriba) antes de mapear variables.');
+                      showToast('Primero guarda el PLC antes de mapear variables', 'error');
                       setShowConfigurator(false);
                     }
                 }}
@@ -859,10 +910,15 @@ function PlcDashboardContent() {
                 </>
               )}
               {/* Mensaje Largo */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-2 hover:bg-white/10 transition-colors">
-                <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Alarma Predictiva</span>
-                <span className="text-sm font-light text-white/80 mt-1">
-                  El sistema {brandInfo.name} no presenta anomalías en la última lectura. Todo rinde al 98% de su capacidad.
+              <div className={`${plcWarning?.includes('0x8104') ? 'bg-red-900/30 border-red-500/40' : 'bg-white/5 border-white/10'} border rounded-2xl p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-2 hover:bg-white/10 transition-colors`}>
+                <span className={`${plcWarning?.includes('0x8104') ? 'text-red-400' : 'text-white/50'} text-[10px] font-bold uppercase tracking-widest mb-2`}>
+                  {plcWarning?.includes('0x8104') ? '⚠ Error de Acceso PLC' : 'Alarma Predictiva'}
+                </span>
+                <span className={`text-sm font-light ${plcWarning?.includes('0x8104') ? 'text-red-200' : 'text-white/80'} mt-1`}>
+                  {plcWarning
+                    ? plcWarning
+                    : `El sistema ${brandInfo.name} no presenta anomalías en la última lectura. Todo rinde al 98% de su capacidad.`
+                  }
                 </span>
               </div>
               </div>
@@ -884,25 +940,45 @@ function PlcDashboardContent() {
               </p>
 
               <div className="flex-1 bg-black/60 rounded-2xl border border-white/5 p-4 flex flex-col h-full overflow-hidden relative">
-                {/* Área de Mensajes del Asistente */}
+                {/* Área de Mensajes */}
                 <div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-2 pb-4">
-                  
-                  {/* Mensaje de Bienvenida */}
-                  <div className="bg-white/10 text-white/90 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start w-11/12 border border-white/5 backdrop-blur-sm">
-                    Hola. Conexión de puente a <b>{brandInfo.name}</b> habilitada. Estoy visualizando los parámetros actuales ({plcData?.temperaturaCpu}°C, {plcData?.estatusGeneral}). ¿Qué datos o diagnósticos deseas obtener?
-                  </div>
-
-                  {/* Futuros mensajes del usuario pueden ir aquí */}
+                  {chatMessages.length === 0 && (
+                    <div className="bg-white/10 text-white/90 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start w-11/12 border border-white/5 backdrop-blur-sm">
+                      Hola. Soy la IA de Azteq conectada a <b>{brandInfo.name}</b>. ¿En qué puedo ayudarte?
+                    </div>
+                  )}
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`text-sm p-4 border border-white/5 backdrop-blur-sm ${
+                      msg.role === 'user'
+                        ? 'bg-[#D4AF37]/10 text-[#D4AF37] rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl self-end w-10/12'
+                        : 'bg-white/10 text-white/90 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start w-11/12'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="bg-white/5 text-white/40 text-sm p-4 rounded-tr-2xl rounded-bl-2xl rounded-br-2xl self-start animate-pulse">
+                      Analizando...
+                    </div>
+                  )}
                 </div>
 
-                {/* Caja de Input (Input para preguntar a la IA Planta) */}
+                {/* Input */}
                 <div className="mt-auto pt-2 flex gap-2 border-t border-white/5">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleChatSend()}
                     placeholder={`Pregunta sobre el sistema ${brandInfo.name}...`}
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light"
+                    disabled={chatLoading}
                   />
-                  <button className="bg-[#D4AF37] hover:bg-[#E5C158] text-black px-4 py-3 rounded-xl transition-all hover:scale-105 shadow-[0_0_10px_rgba(212,175,55,0.4)]">
+                  <button
+                    onClick={handleChatSend}
+                    disabled={chatLoading || !chatInput.trim()}
+                    className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-40 text-black px-4 py-3 rounded-xl transition-all hover:scale-105 shadow-[0_0_10px_rgba(212,175,55,0.4)]"
+                  >
                     <svg className="w-5 h-5 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                   </button>
               </div>
@@ -911,7 +987,19 @@ function PlcDashboardContent() {
           </div>
         </main>
       )}
+    {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border backdrop-blur-md transition-all ${
+          toast.type === 'success' ? 'bg-green-900/80 border-green-500/40 text-green-300' :
+          toast.type === 'error'   ? 'bg-red-900/80 border-red-500/40 text-red-300' :
+                                     'bg-black/90 border-[#D4AF37]/30 text-[#D4AF37]'
+        }`}>
+          <span className="text-sm font-light">{toast.msg}</span>
+          <button onClick={() => setToast(null)} className="opacity-50 hover:opacity-100 text-xs ml-2">✕</button>
+        </div>
+      )}
     </div>
+
   );
 }
 

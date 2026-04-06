@@ -8,6 +8,9 @@ create table if not exists documentos (
   embedding vector(1536) -- 1536 es el tamaño del modelo de embeddings de OpenAI
 );
 
+-- Índice para búsquedas de similitud en documentos
+create index if not exists idx_documentos_embedding on documentos using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+
 -- 3. Crear la función de búsqueda de similitud (La magia de la IA experta)
 create or replace function buscar_documentos (
   query_embedding vector(1536),
@@ -71,3 +74,14 @@ create policy "Usuarios actualizan sus propios PLCs"
 create policy "Usuarios borran sus propios PLCs"
   on plcs for delete
   using (auth.uid() = user_id);
+
+-- 5. Crear tabla para tracking de uso de IA (rate limiting)
+create table if not exists limites_uso (
+  id bigserial primary key,
+  email text not null,
+  creado_en timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- Índices para optimizar queries de rate limiting
+create index if not exists idx_limites_uso_email on limites_uso(email);
+create index if not exists idx_limites_uso_creado_en on limites_uso(creado_en);
