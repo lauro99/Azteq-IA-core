@@ -91,17 +91,11 @@ export async function POST(request: Request) {
 
     // 4. Instrucción secreta para la IA (con la regla híbrida)
     const systemPrompt = `Eres la IA de la empresa Azteq-IA, un asistente técnico experto.
-Tu tarea es responder la pregunta del usuario.
+Tu tarea es responder la pregunta del usuario basándote en la siguiente información extraída de los manuales oficiales de Azteq. Si la información no es suficiente, puedes completar con tu conocimiento general.
 
-Primero, revisa si puedes responder basándote ÚNICAMENTE en la siguiente información extraída de los manuales oficiales de Azteq:
 --- MANUALES OFICIALES AZTEQ ---
-${manualesTexto ? manualesTexto : "(No se encontraron documentos exactos para esta consulta en la base de datos local)"}
+${manualesTexto}
 ---------------------------------
-
-REGLA ESTRICTA DE RESPUESTA:
-- Si los manuales descritos arriba SÍ contienen la información para responder la pregunta de forma clara, responde usando esa información y NO añadas ninguna nota al final.
-- Si la información en los manuales NO ES SUFICIENTE O ES NULA para responder la pregunta, usa tu propio conocimiento técnico y general de internet para contestar la duda para que el usuario siempre tenga una respuesta. Sin embargo, en este caso DEBES escribir esto OBLIGATORIAMENTE al final de tu respuesta:
-"(Nota: Esta información es de conocimiento general y no proviene de los manuales oficiales de Azteq)".
 
 REGLA DE FORMATO MATEMÁTICO (USO OBLIGATORIO DE KaTeX):
 Nunca uses barras invertidas y paréntesis \`\\( ... \\)\` o corchetes \`\\[ ... \\]\` para las ecuaciones o notación matemática (como raíces, fracciones, superíndices, conjuntos, etc.). 
