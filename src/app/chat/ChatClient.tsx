@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import ReactMarkdown from 'react-markdown';
@@ -15,6 +15,16 @@ export default function ChatClient() {
   const [messages, setMessages] = useState<{role: 'user'|'ai', content: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
 
   // Pre-procesar texto de la IA para convertir delimitadores \( \) a $ de KaTeX
   const preprocessMath = (text: string) => {
@@ -203,26 +213,42 @@ export default function ChatClient() {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* Input / Botón */}
-        <div className="px-6 md:px-10 pb-[24px] pt-4 flex gap-4 w-full bg-[#D1C3AD]/50 border-t-4 border-[#A3855B] relative z-10">
-          <input
-            type="text"
-            className="flex-1 bg-[#F2EADA] border-b-[4px] border-r-[4px] border-[#A3855B] text-[#312011] placeholder-[#87705B] px-6 py-[14px] focus:outline-none focus:bg-[#FCFAEA] transition-all font-sans text-[14px] md:text-[16px] shadow-inner font-medium"
+        <div className="px-6 md:px-10 pb-[24px] pt-4 flex gap-4 w-full bg-[#D1C3AD]/50 border-t-4 border-[#A3855B] relative z-10 items-end">
+          <textarea
+            className="flex-1 bg-[#F2EADA] border-b-[4px] border-r-[4px] border-[#A3855B] text-[#312011] placeholder-[#87705B] px-6 py-[14px] focus:outline-none focus:bg-[#FCFAEA] transition-all font-sans text-[14px] md:text-[16px] shadow-inner font-medium resize-none min-h-[52px] max-h-[150px] overflow-y-auto"
             style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}
             placeholder={t.placeholder}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            rows={1}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+                e.currentTarget.style.height = 'auto';
+              }
+            }}
             disabled={loading}
           />
           <button
-            onClick={handleSend}
+            onClick={() => {
+              handleSend();
+              // Reiniciamos altura si es posible obteniendo el textarea
+              const textarea = document.querySelector('textarea');
+              if (textarea) textarea.style.height = 'auto';
+            }}
             disabled={loading || !input.trim()}
-            className="group relative bg-[#121927] text-[#E8C673] font-bold tracking-[0.2em] px-8 md:px-10 py-[14px] uppercase hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px] border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673]"  
+            className="group relative bg-[#121927] text-[#E8C673] font-bold tracking-[0.2em] px-8 md:px-10 py-[14px] uppercase hover:bg-[#1A2624] hover:text-[#FBE7A1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-sans text-[15px] border-b-[4px] border-r-[4px] border-[#E8C673]/50 hover:border-[#E8C673] h-[52px] shrink-0"  
             style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
           >
             {t.send}
