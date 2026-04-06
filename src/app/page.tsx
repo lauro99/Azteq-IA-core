@@ -128,13 +128,13 @@ export default function Home() {
             <>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488] animate-pulse"></div>
-                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">{t.accessControl}</span>
+                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Iniciar Sesión</span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   id="operatorIdInput"
-                  type="text" 
-                  placeholder={t.operatorId} 
+                  type="email" 
+                  placeholder={"Correo electrónico"} 
                   value={operatorId || ''}
                   onChange={(e) => setOperatorId(e.target.value)}
                   disabled={isLoading}
@@ -142,7 +142,7 @@ export default function Home() {
                 />
                 <input 
                   type="password" 
-                  placeholder={t.accessCode} 
+                  placeholder={"Contraseña"} 
                   value={accessCode || ''}
                   onChange={(e) => setAccessCode(e.target.value)}
                   disabled={isLoading}
@@ -163,11 +163,99 @@ export default function Home() {
       </div>
       <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-6 md:px-12 flex flex-col">
         <main 
-          className="w-full flex-1 flex flex-col justify-end"
+          className="w-full flex-1 flex flex-col justify-end pointer-events-auto h-full"
           onClick={(e) => {
             if (e.target === e.currentTarget) setExpandedCard('none');
           }}
         >
+          {/* SI EL USUARIO NO ESTÁ LOGUEADO, MOSTRAMOS LOS PLANES */}
+          {!user ? (
+            <div className="w-full flex flex-col items-center justify-center gap-6 z-20 overflow-y-auto">
+              <div className="text-center mb-2 mt-12 md:mt-24 px-4 bg-black/40 backdrop-blur-md rounded-2xl py-4 border border-white/5">
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-4 tracking-tight drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">Elige tu Plan</h2>
+                <p className="text-white/80 text-xs md:text-sm max-w-xl mx-auto">Selecciona la suscripción que mejor se adapte a tus necesidades para acceder al sistema.</p>
+              </div>
+              
+              <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 w-full max-w-6xl mx-auto px-4 pb-12">
+                {/* PLAN FREE */}
+                <div className="flex-1 bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-[#0D9488]/50 transition-all hover:-translate-y-2 group">
+                  <div className="w-12 h-12 bg-white/5 border border-white/10 text-white rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-xl">🆓</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Básico / Free</h3>
+                  <div className="text-3xl font-extrabold text-[#0D9488] mb-4 drop-shadow-[0_0_10px_rgba(13,148,136,0.3)]">$0 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0D9488] font-bold mt-0.5">✓</span> Acceso a la IA Experta
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0D9488] font-bold mt-0.5">✓</span> Límite de 20 preguntas al día
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    className="mt-auto w-full bg-white/10 hover:bg-[#0D9488] text-white hover:text-black py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(13,148,136,0.4)]"
+                  >
+                    Comenzar Gratis
+                  </button>
+                </div>
+
+                {/* PLAN PRO */}
+                <div className="flex-1 bg-black/70 backdrop-blur-xl border-[2px] border-[#D4AF37] p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_0_40px_rgba(212,175,55,0.15)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all hover:-translate-y-2 relative transform md:-translate-y-4 group">
+                  <div className="absolute top-0 right-0 bg-[#D4AF37] text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                    Recomendado
+                  </div>
+                  <div className="w-14 h-14 bg-[#D4AF37]/10 border border-[#D4AF37]/50 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl">⚡</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Profesional</h3>
+                  <div className="text-4xl font-extrabold text-[#D4AF37] mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">$400 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> Acceso <b className="text-white">ilimitado</b> a la IA Experta
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> Conectar hasta <b className="text-white">2 PLCs</b> en IA Planta
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> Soporte prioritario
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    className="mt-auto w-full bg-[#D4AF37] hover:bg-[#F2CD5C] text-black py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:scale-105 active:scale-95"
+                  >
+                    Suscribirme
+                  </button>
+                </div>
+
+                {/* PLAN ENTERPRISE */}
+                <div className="flex-1 bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-blue-500/50 transition-all hover:-translate-y-2 group">
+                  <div className="w-12 h-12 bg-white/5 border border-white/10 text-blue-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-xl">🏢</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Acceso Libre</h3>
+                  <div className="text-3xl font-extrabold text-blue-400 mb-4 drop-shadow-[0_0_10px_rgba(96,165,250,0.3)]">$1000 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold mt-0.5">✓</span> Acceso <b className="text-white">total e ilimitado</b> al sistema
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold mt-0.5">✓</span> Conectar <b className="text-white">PLCs ilimitados</b>
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    className="mt-auto w-full bg-white/10 hover:bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+                  >
+                    Acceso Total
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* YA LOGUEADO, MOSTRAMOS OPCIONES ORIGINALES IA EXPERTA / IA PLANTA EN LAS ORILLAS */
+            <>
           {/* VERSION MOVIL: Burbujas flotantes */}
           <div className={`md:hidden flex ${expandedCard !== 'none' ? 'flex-col items-center' : 'flex-row items-end justify-between'} gap-6 pb-2 w-full transition-all duration-500`}>
             
@@ -352,6 +440,8 @@ export default function Home() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </main>
         <footer className="w-full mt-4 pt-4 border-t border-white/10 text-center text-xs text-white/40 tracking-widest uppercase">
           <p>{t.footer}</p>
