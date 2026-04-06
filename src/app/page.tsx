@@ -130,7 +130,7 @@ export default function Home() {
                 <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488] animate-pulse"></div>
                 <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Iniciar Sesión</span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-3 w-full">
                 <input 
                   id="operatorIdInput"
                   type="email" 
@@ -138,7 +138,7 @@ export default function Home() {
                   value={operatorId || ''}
                   onChange={(e) => setOperatorId(e.target.value)}
                   disabled={isLoading}
-                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
                 <input 
                   type="password" 
@@ -146,15 +146,24 @@ export default function Home() {
                   value={accessCode || ''}
                   onChange={(e) => setAccessCode(e.target.value)}
                   disabled={isLoading}
-                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
-                <button 
-                  onClick={handleLogin}
-                  disabled={isLoading}
-                  className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black px-6 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
-                >
-                  {isLoading ? '...' : t.enter}
-                </button>
+                <div className="flex gap-2 w-full mt-1">
+                  <button 
+                    onClick={handleLogin}
+                    disabled={isLoading}
+                    className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 shadow-[0_4px_15px_rgba(212,175,55,0.2)]"
+                  >
+                    {isLoading ? '...' : t.enter}
+                  </button>
+                  <button 
+                    onClick={() => router.push('/registro')}
+                    disabled={isLoading}
+                    className="bg-transparent border border-[#0D9488]/50 hover:bg-[#0D9488]/20 disabled:opacity-50 disabled:cursor-not-allowed text-[#E0F2F1] px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1"
+                  >
+                    Registrarse
+                  </button>
+                </div>
               </div>
               {errorMsg && <p className="text-red-400 text-[10px] uppercase font-bold tracking-widest">{errorMsg}</p>}
             </>
