@@ -17,6 +17,7 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<'none' | 'expert' | 'plant'>('none');
   const [showInfo, setShowInfo] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>(''); // Nuevo estado para el plan
 
   const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
 
@@ -24,17 +25,37 @@ export default function Home() {
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserPlan(session.user.id);
+      }
     };
     fetchSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);
+        if (session?.user) {
+          fetchUserPlan(session.user.id);
+        } else {
+          setUserPlan('');
+        }
       }
     );
 
     return () => authListener.subscription.unsubscribe();
   }, []);
+
+  const fetchUserPlan = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('plan')
+      .eq('id', userId)
+      .single();
+      
+    if (data) {
+      setUserPlan(data.plan);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -102,7 +123,7 @@ export default function Home() {
             <>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488]"></div>
-                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Sesión Activa</span>
+                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Sesión Activa {userPlan ? `| PLAN ${userPlan.toUpperCase()}` : ''}</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <span className="text-white text-sm font-light">Operador: <b className="text-[#D4AF37]">{user.email?.split('@')[0]}</b></span>
