@@ -303,7 +303,7 @@ function PlcDashboardContent() {
                 port,
                 rack: Number(rack),
                 slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
-                isCloud: connectionMode === 'cloud',
+                isCloud: (connectionMode as string) === 'cloud',
                 connectOnly: ioTags.length === 0,
                 ioTags
               })
@@ -414,7 +414,7 @@ function PlcDashboardContent() {
             port,
             rack: Number(rack),
             slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
-            isCloud: connectionMode === 'cloud',
+            isCloud: (connectionMode as string) === 'cloud',
             connectOnly: ioTags.length === 0,
             ioTags
           })
