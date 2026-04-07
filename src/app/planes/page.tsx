@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 
 export default function PlanesPage() {
   const router = useRouter();
@@ -57,210 +57,276 @@ export default function PlanesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/20 via-black to-[#020202] pointer-events-none z-0"></div>
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-2 border-emerald-900 border-t-[#00f0ff] border-b-[#10b981] rounded-none animate-spin [clip-path:polygon(50%_0%,100%_50%,50%_100%,0%_50%)] shadow-[0_0_20px_rgba(16,185,129,0.5)]"></div>
+          <span className="text-[#00f0ff] font-mono text-[10px] uppercase tracking-[0.3em] animate-pulse">Sincronizando...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col bg-black text-white font-sans overflow-hidden">
-      {/* Fondo azteca con filtro oscuro */}
-      <div className="absolute inset-0 bg-no-repeat bg-center bg-[url('/azteq-IA.png')] bg-[length:100%_100%] bg-fixed opacity-20 z-0 mix-blend-luminosity"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-black pointer-events-none z-0"></div>
+    <div className="min-h-screen relative flex flex-col bg-[#050505] text-emerald-50 font-sans overflow-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
+      {/* Fondo Cyber-Azteca */}
+      <div className="absolute inset-0 bg-no-repeat bg-center bg-[url('/azteq-IA.png')] bg-[length:100%_100%] bg-fixed opacity-[0.15] z-0 mix-blend-screen scale-105 filter contrast-125 saturate-150 hue-rotate-[#10b981]"></div>
+      
+      {/* Overlay de Hexágonos / Circuitería */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/20 via-black to-[#020202] pointer-events-none z-0"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#10b98110_1px,transparent_1px),linear-gradient(to_bottom,#10b98110_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 z-0 pointer-events-none"></div>
 
       {/* HEADER */}
-      <header className="relative z-20 p-6 flex justify-between items-center border-b border-white/10 bg-black/40 backdrop-blur-md">
+      <header className="relative z-20 p-6 flex justify-between items-center border-b border-emerald-900/50 bg-[#050B0A]/80 backdrop-blur-md">
         <button 
           onClick={() => router.back()}
-          className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
+          className="text-emerald-500/70 hover:text-[#00f0ff] flex items-center gap-2 text-xs font-mono font-bold tracking-widest uppercase transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          <span>{t.backBtn || 'Volver'}</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          <span>{t.backBtn || 'Retorno'}</span>
         </button>
-        <span className="font-bold text-sm tracking-widest uppercase text-indigo-400">
-          {t.subscriptions || 'Suscripciones'}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="hidden md:inline-flex font-black font-mono text-[10px] tracking-[0.3em] uppercase text-emerald-500/50 border border-emerald-900/50 px-3 py-1 bg-emerald-950/20">
+            {t.subscriptions || 'Protocolo de Suscripción'}
+          </span>
+          <LanguageSelector />
+        </div>
       </header>
 
       {/* MAIN CONTENT */}
       <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center">
-        <div className="text-center mb-12 px-4">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">{t.planesTitle || 'Actualiza tu Plan'}</h1>
-          <p className="text-white/70 text-sm md:text-base max-w-2xl mx-auto">{t.planesDesc || 'Selecciona la suscripción que mejor se adapte a tus necesidades. Las actualizaciones se aplican de manera inmediata a tu cuenta.'}</p>
+        <div className="text-center mb-12 px-4 relative">
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-64 h-1 bg-emerald-500/50 blur-[8px]"></div>
+          <div className="inline-flex items-center gap-4 mb-4">
+            <span className="h-0.5 w-8 bg-emerald-500/80 shadow-[0_0_10px_#10b981]"></span>
+            <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#00f0ff] to-emerald-400 tracking-[0.1em] drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] uppercase">
+              {t.planesTitle || 'Actualiza tu Plan'}
+            </h1>
+            <span className="h-0.5 w-8 bg-[#00f0ff]/80 shadow-[0_0_10px_#00f0ff]"></span>
+          </div>
+          <p className="text-emerald-100/70 font-mono text-xs md:text-sm max-w-2xl mx-auto uppercase tracking-widest">{t.planesDesc || 'Inicia la secuencia de sincronización. Las actualizaciones del núcleo se aplican inmediatamente a tu interfaz.'}</p>
           
           {/* Billing Toggle */}
           <div className="mt-8 flex items-center justify-center gap-3">
-            <span className={`text-sm font-semibold transition-colors ${!isAnnual ? 'text-white' : 'text-white/50'}`}>{t.monthly || 'Facturación Mensual'}</span>
+            <span className={`text-sm font-mono tracking-widest uppercase transition-colors ${!isAnnual ? 'text-[#00f0ff] drop-shadow-[0_0_5px_#00f0ff]' : 'text-emerald-500/50'}`}>{t.monthly || 'Ciclo Menor'}</span>
             <button 
               onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative w-14 h-7 rounded-full flex items-center border transition-all p-1 ${isAnnual ? 'bg-[#D4AF37]/20 border-[#D4AF37]/50' : 'bg-white/10 border-white/20'}`}
+              className={`relative w-16 h-8 rounded-none flex items-center border transition-all p-1 [clip-path:polygon(5px_0,100%_0,calc(100%-5px)_100%,0_100%)] ${isAnnual ? 'bg-[#10b981]/20 border-[#10b981]/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-[#00f0ff]/10 border-[#00f0ff]/30'}`}
               aria-label="Alternar facturación anual"
             >
-              <div className={`w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${isAnnual ? 'translate-x-7 bg-[#D4AF37]' : 'translate-x-0 bg-white/80'}`}></div>
+              <div className={`w-6 h-6 rounded-none [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)] shadow-md transform transition-transform duration-300 ${isAnnual ? 'translate-x-7 bg-[#10b981]' : 'translate-x-0 bg-[#00f0ff]'}`}></div>
             </button>
-            <span className={`text-sm font-semibold transition-colors flex items-center gap-2 ${isAnnual ? 'text-[#D4AF37]' : 'text-white/50'}`}>
-              {t.annual || 'Facturación Anual'}
-              <span className="bg-[#D4AF37]/20 text-[#D4AF37] text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold border border-[#D4AF37]/50 animate-pulse">{t.save10 || 'Ahorra 10%'}</span>
+            <span className={`text-sm font-mono tracking-widest uppercase transition-colors flex items-center gap-2 ${isAnnual ? 'text-[#10b981] drop-shadow-[0_0_5px_#10b981]' : 'text-emerald-500/50'}`}>
+              {t.annual || 'Ciclo Mayor'}
+              <span className="bg-[#10b981]/20 text-[#10b981] text-[10px] px-2 py-0.5 rounded-none uppercase tracking-widest font-bold border border-[#10b981]/50 animate-pulse [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]">{t.save10 || 'Eficiencia +10%'}</span>
             </span>
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 w-full pb-12">
-          {/* PLAN FREE */}
-          <div className={`flex-1 bg-black/60 backdrop-blur-xl border ${userPlan === 'free' ? 'border-[#0D9488]' : 'border-white/10'} p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all group relative`}>
+        <div className="flex flex-col md:flex-row items-stretch justify-center gap-8 w-full pb-12">
+          {/* PLAN FREE - NÚCLEO BÁSICO */}
+          <div className={`flex-1 bg-[#050B0A]/80 backdrop-blur-xl border ${userPlan === 'free' ? 'border-[#00f0ff] shadow-[0_0_20px_rgba(0,240,255,0.2)]' : 'border-emerald-500/20'} p-8 relative flex flex-col items-center text-center transition-all group overflow-hidden [clip-path:polygon(0%_0%,_100%_0%,_100%_calc(100%_-_20px),_calc(100%_-_20px)_100%,_0%_100%)]`}>
+            {/* Decorative Cyber Aztec corners */}
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#00f0ff]/50 opacity-50"></div>
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#00f0ff]/50 opacity-50"></div>
+
             {userPlan === 'free' && (
-              <div className="absolute -top-3 bg-[#0D9488] text-white text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-wider shadow-[0_0_10px_rgba(13,148,136,0.5)]">
-                {t.currentPlan || 'Tu Plan Actual'}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#00f0ff]/20 border border-[#00f0ff] text-[#00f0ff] text-[10px] font-bold px-6 py-1 uppercase tracking-widest shadow-[0_0_15px_rgba(0,240,255,0.5)] [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_100%,0_100%)]">
+                {t.currentPlan || 'Unidad Actual'}
               </div>
             )}
-            <div className="w-14 h-14 bg-white/5 border border-white/10 text-white rounded-2xl flex items-center justify-center mb-6">
-              <span className="text-2xl">🆓</span>
+            
+            {/* SVG Icon - Cyber Node */}
+            <div className="w-16 h-16 bg-[#00f0ff]/5 border border-[#00f0ff]/30 text-[#00f0ff] rounded-none flex items-center justify-center mb-6 mt-4 relative rotate-45 group-hover:shadow-[0_0_20px_#00f0ff30] transition-shadow">
+              <svg className="w-8 h-8 -rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zm0 10v10m-10-5l10 5 10-5" />
+                <circle cx="12" cy="12" r="2" fill="currentColor" />
+              </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">{t.basicPlan || 'Básico'}</h3>
-            <div className="text-4xl font-extrabold text-[#0D9488] mb-1 flex items-end justify-center gap-1">
-              $0 <span className="text-sm text-white/50 font-normal mb-1">{t.perMonth || 'USD /mes'}</span>
+
+            <h3 className="text-xl font-mono font-bold text-emerald-50 mb-2 uppercase tracking-widest">{t.basicPlan || 'Núcleo Básico'}</h3>
+            <div className="text-4xl font-extrabold text-[#00f0ff] mb-1 flex items-end justify-center gap-1 font-mono drop-shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+              $0 <span className="text-sm text-emerald-200/50 font-normal mb-1 tracking-widest">USD /CIL</span>
             </div>
             <p className="text-xs text-transparent mb-6 uppercase">.</p>
-            <ul className="text-left text-white/70 space-y-4 mb-4 w-full text-sm font-light">
-              <li className="flex items-start gap-3"><span className="text-[#0D9488] font-bold mt-0.5">✓</span> {t.planBasicAccess || 'Acceso a la IA Experta'}</li>
-              <li className="flex items-start gap-3"><span className="text-[#0D9488] font-bold mt-0.5">✓</span> {t.planBasicLimit || 'Límite de 20 preguntas al día'}</li>
+            
+            <ul className="text-left text-emerald-100/70 space-y-4 mb-4 w-full text-sm font-mono tracking-tight">
+              <li className="flex items-start gap-3"><span className="text-[#00f0ff] font-bold mt-0.5">⟩</span> {t.planBasicAccess || 'Enlace con IA Experta'}</li>
+              <li className="flex items-start gap-3"><span className="text-[#00f0ff] font-bold mt-0.5">⟩</span> {t.planBasicLimit || 'Límite: 20 peticiones/ciclo'}</li>
             </ul>
             <div className="mt-8 w-full"></div>
             <button 
               disabled={userPlan === 'free'} 
-              className={`mt-auto w-full py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all ${userPlan === 'free' ? 'bg-white/5 text-white/50 cursor-not-allowed' : 'bg-white/10 hover:bg-[#0D9488] text-white'}`}
+              className={`mt-auto w-full py-3.5 font-mono font-bold uppercase tracking-widest text-xs transition-all relative overflow-hidden ${userPlan === 'free' ? 'bg-emerald-900/20 text-emerald-500/50 cursor-not-allowed border border-emerald-900/30' : 'bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] border border-[#00f0ff]/50 hover:shadow-[0_0_15px_rgba(0,240,255,0.4)]'}`}
+              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
             >
-              {userPlan === 'free' ? (t.active || 'Activo') : (t.startFree || 'Seleccionar')}
+              {userPlan === 'free' ? (t.active || 'Sincronizado') : (t.startFree || 'Extraer')}
             </button>
           </div>
 
-          {/* PLAN PRO */}
-          <div className={`flex-1 bg-black/70 backdrop-blur-xl border-[2px] ${userPlan === 'pro' ? 'border-[#D4AF37] scale-105' : 'border-[#D4AF37]/50'} p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_0_40px_rgba(212,175,55,0.15)] relative transform transition-all group`}>
+          {/* PLAN PRO - NÚCLEO ÉLITE */}
+          <div className={`flex-1 bg-[#1A1A10]/90 backdrop-blur-xl border-[2px] ${userPlan === 'pro' ? 'border-[#10b981] scale-105 shadow-[0_0_30px_rgba(16,185,129,0.3)]' : 'border-[#10b981]/50 shadow-[0_0_20px_rgba(16,185,129,0.1)]'} p-8 relative flex flex-col items-center text-center transform transition-all group z-10 [clip-path:polygon(0%_20px,_20px_0%,_100%_0%,_100%_calc(100%_-_20px),_calc(100%_-_20px)_100%,_0%_100%)]`}>
+            
+            {/* Grid overlay inside Pro */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#10b98120_1px,transparent_1px),linear-gradient(to_bottom,#10b98120_1px,transparent_1px)] bg-[size:1rem_1rem] opacity-30 pointer-events-none p-1"></div>
+
             {userPlan === 'pro' ? (
-              <div className="absolute -top-3 bg-[#D4AF37] text-black text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-wider shadow-[0_0_10px_rgba(212,175,55,0.5)]">
-                {t.currentPlan || 'Tu Plan Actual'}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#10b981] text-black text-[10px] font-bold px-6 py-1 uppercase tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.8)] [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_100%,0_100%)] z-10">
+                {t.currentPlan || 'Unidad Actual'}
               </div>
             ) : (
-              <div className="absolute top-0 right-0 bg-[#D4AF37] text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow-[0_0_10px_rgba(212,175,55,0.5)]">
-                {t.recommended || 'Recomendado'}
+              <div className="absolute top-0 right-0 bg-[#10b981] text-black text-[10px] font-bold px-4 py-1.5 uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.8)] [clip-path:polygon(15px_0,100%_0,100%_100%,0_100%)] z-10">
+                {t.recommended || 'Óptimo'}
               </div>
             )}
             
-            <div className="w-16 h-16 bg-[#D4AF37]/10 border border-[#D4AF37]/50 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-6">
-              <span className="text-3xl">⚡</span>
+            {/* SVG Icon - Aztec Lightning/Energy */}
+            <div className="w-20 h-20 bg-[#10b981]/10 border-2 border-[#10b981] text-[#10b981] flex items-center justify-center mb-6 mt-4 relative group-hover:scale-110 transition-transform duration-500 [clip-path:polygon(25%_0%,75%_0%,100%_50%,75%_100%,25%_100%,0%_50%)] shadow-[0_0_25px_rgba(16,185,129,0.4)]">
+              <svg className="w-10 h-10 animate-pulse text-[#10b981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">{t.proPlan || 'Profesional'}</h3>
-            <div className="text-4xl font-extrabold text-[#D4AF37] mb-1 flex items-end justify-center gap-1 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">
+
+            <h3 className="text-2xl font-mono font-black text-[#10b981] mb-2 uppercase tracking-[0.2em]">{t.proPlan || 'Matriz Élite'}</h3>
+            <div className="text-5xl font-extrabold text-[#10b981] mb-1 flex items-end justify-center gap-1 font-mono drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">
               ${isAnnual ? 400 * 0.9 : 400} 
-              <span className="text-sm text-white/50 font-normal mb-1">{t.perMonth || 'USD /mes'}</span>
+              <span className="text-sm text-emerald-200/50 font-normal mb-1 tracking-widest">USD /CIL</span>
             </div>
             {isAnnual ? (
-              <p className="text-xs text-[#D4AF37] mb-6 font-semibold tracking-wide uppercase">(${400 * 12 * 0.9} {t.billedAnnually || 'USD facturados al año'})</p>
+              <p className="text-[10px] text-[#10b981] mb-6 font-mono font-bold tracking-widest uppercase opacity-80">(${400 * 12 * 0.9} {t.billedAnnually || 'USD /Rotación Solar'})</p>
             ) : (
-              <p className="text-xs text-transparent mb-6 uppercase">.</p> // Espaciador para mantener altura
+              <p className="text-xs text-transparent mb-6 uppercase">.</p>
             )}
-            <ul className="text-left text-white/70 space-y-4 mb-4 w-full text-sm font-light">
-              <li className="flex items-start gap-3"><span className="text-[#D4AF37] font-bold mt-0.5">✓</span> <span>{t.planProAccess ? `${t.planProAccess[0]} ` : 'Acceso '}<b className="text-white">{t.planProAccess ? t.planProAccess[1] : 'ilimitado'}</b>{t.planProAccess ? ` ${t.planProAccess[2]}` : ' a la IA Experta'}</span></li>
-              <li className="flex items-start gap-3"><span className="text-[#D4AF37] font-bold mt-0.5">✓</span> <span>{t.planProPlcs ? `${t.planProPlcs[0]} ` : 'Conectar hasta '}<b className="text-white">{t.planProPlcs ? t.planProPlcs[1] : '2 PLCs'}</b>{t.planProPlcs ? ` ${t.planProPlcs[2]}` : ''}</span></li>
-              <li className="flex items-start gap-3"><span className="text-[#D4AF37] font-bold mt-0.5">✓</span> {t.planProSupport || 'Soporte prioritario'}</li>
+            
+            <ul className="text-left text-emerald-50 space-y-5 mb-4 w-full text-sm font-mono tracking-tight">
+              <li className="flex items-start gap-3"><span className="text-[#10b981] font-bold mt-0.5">⟩</span> <span>{t.planProAccess ? `${t.planProAccess[0]} ` : 'Enlace '}<b className="text-[#10b981]">{t.planProAccess ? t.planProAccess[1] : 'ilimitado'}</b>{t.planProAccess ? ` ${t.planProAccess[2]}` : ' a la IA Experta'}</span></li>
+              <li className="flex items-start gap-3"><span className="text-[#10b981] font-bold mt-0.5">⟩</span> <span>{t.planProPlcs ? `${t.planProPlcs[0]} ` : 'Sincronizar '}<b className="text-[#10b981]">{t.planProPlcs ? t.planProPlcs[1] : '2 Nodos PLC'}</b>{t.planProPlcs ? ` ${t.planProPlcs[2]}` : ''}</span></li>
+              <li className="flex items-start gap-3"><span className="text-[#10b981] font-bold mt-0.5">⟩</span> {t.planProSupport || 'Canal de soporte prioritario'}</li>
             </ul>
+            
             <div className="mt-8 w-full"></div>
             <button 
               disabled={userPlan === 'pro'}
               onClick={(e) => { e.preventDefault(); handleCheckout('pro'); }} 
-              className={`mt-auto w-full py-4 rounded-xl font-bold uppercase tracking-wider text-xs transition-all ${userPlan === 'pro' ? 'bg-[#D4AF37] text-black shadow-[0_0_20px_rgba(212,175,55,0.5)]' : 'bg-[#D4AF37]/80 hover:bg-[#D4AF37] text-black hover:scale-105 active:scale-95'}`}
+              className={`mt-auto w-full py-4 font-mono font-bold uppercase tracking-[0.1em] text-sm transition-all group-hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] ${userPlan === 'pro' ? 'bg-[#10b981] text-black' : 'bg-[#10b981]/20 hover:bg-[#10b981] border border-[#10b981] text-[#10b981] hover:text-black'}`}
+              style={{ clipPath: 'polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px)' }}
             >
-              {userPlan === 'pro' ? (t.active || 'Activo') : (t.upgradePro || 'Subir a Pro')}
+              {userPlan === 'pro' ? (t.active || 'Sincronizado') : (t.upgradePro || 'Ascender Rango')}
             </button>
           </div>
 
-          {/* PLAN ENTERPRISE */}
-          <div className={`flex-1 bg-black/60 backdrop-blur-xl border ${userPlan === 'enterprise' ? 'border-blue-400' : 'border-white/10'} p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all group relative`}>
+          {/* PLAN ENTERPRISE - OMNI-CÓDICE */}
+          <div className={`flex-1 bg-[#050510]/80 backdrop-blur-xl border ${userPlan === 'enterprise' ? 'border-[#d4af37] shadow-[0_0_20px_rgba(212,175,55,0.2)]' : 'border-[#d4af37]/30'} p-8 relative flex flex-col items-center text-center transition-all group overflow-hidden [clip-path:polygon(0%_0%,_100%_0%,_100%_calc(100%_-_20px),_calc(100%_-_20px)_100%,_0%_100%)]`}>
+            
+            {/* Cyber Aztec corners Gold */}
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#d4af37]/50 opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#d4af37]/50 opacity-50"></div>
+
             {userPlan === 'enterprise' && (
-              <div className="absolute -top-3 bg-blue-500 text-white text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-wider shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                {t.currentPlan || 'Tu Plan Actual'}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#d4af37] text-black text-[10px] font-bold px-6 py-1 uppercase tracking-widest shadow-[0_0_15px_rgba(212,175,55,0.5)] [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_100%,0_100%)]">
+                {t.currentPlan || 'Unidad Actual'}
               </div>
             )}
-            <div className="w-14 h-14 bg-white/5 border border-white/10 text-blue-400 rounded-2xl flex items-center justify-center mb-6">
-              <span className="text-2xl">🏢</span>
+            
+            {/* SVG Icon - Aztec Calendar / Cyber Shield */}
+            <div className="w-16 h-16 bg-[#d4af37]/5 border border-[#d4af37]/30 text-[#d4af37] rounded-full flex items-center justify-center mb-6 mt-4 relative group-hover:rotate-90 transition-transform duration-[2s]">
+              {/* Outer geared ring */}
+              <svg className="absolute w-full h-full" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4">
+                <circle cx="50" cy="50" r="45" />
+              </svg>
+              <svg className="w-8 h-8 text-[#d4af37]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">{t.freeAccessPlan || 'Acceso Libre'}</h3>
-            <div className="text-4xl font-extrabold text-blue-400 mb-1 flex items-end justify-center gap-1 drop-shadow-[0_0_10px_rgba(96,165,250,0.3)]">
+
+            <h3 className="text-xl font-mono font-bold text-[#d4af37] mb-2 uppercase tracking-widest">{t.freeAccessPlan || 'Omni-Códice'}</h3>
+            <div className="text-4xl font-extrabold text-[#d4af37] mb-1 flex items-end justify-center gap-1 font-mono drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">
               ${isAnnual ? 1000 * 0.9 : 1000} 
-              <span className="text-sm text-white/50 font-normal mb-1">{t.perMonth || 'USD /mes'}</span>
+              <span className="text-sm text-[#d4af37]/50 font-normal mb-1 tracking-widest">USD /CIL</span>
             </div>
             {isAnnual ? (
-              <p className="text-xs text-blue-400 mb-6 font-semibold tracking-wide uppercase">(${1000 * 12 * 0.9} {t.billedAnnually || 'USD facturados al año'})</p>
+              <p className="text-[10px] text-[#d4af37] mb-6 font-mono font-bold tracking-widest uppercase opacity-80">(${1000 * 12 * 0.9} {t.billedAnnually || 'USD /Rotación Solar'})</p>
             ) : (
               <p className="text-xs text-transparent mb-6 uppercase">.</p>
             )}
-            <ul className="text-left text-white/70 space-y-4 mb-4 w-full text-sm font-light">
-              <li className="flex items-start gap-3"><span className="text-blue-400 font-bold mt-0.5">✓</span> <span>{t.planEntAccess ? `${t.planEntAccess[0]} ` : 'Acceso '}<b className="text-white">{t.planEntAccess ? t.planEntAccess[1] : 'total e ilimitado'}</b>{t.planEntAccess ? ` ${t.planEntAccess[2]}` : ' al sistema'}</span></li>
-              <li className="flex items-start gap-3"><span className="text-blue-400 font-bold mt-0.5">✓</span> <span>{t.planEntPlcs ? `${t.planEntPlcs[0]} ` : 'Conectar '}<b className="text-white">{t.planEntPlcs ? t.planEntPlcs[1] : 'PLCs ilimitados'}</b>{t.planEntPlcs ? ` ${t.planEntPlcs[2]}` : ''}</span></li>
+            
+            <ul className="text-left text-emerald-100/70 space-y-4 mb-4 w-full text-sm font-mono tracking-tight">
+              <li className="flex items-start gap-3"><span className="text-[#d4af37] font-bold mt-0.5">⟩</span> <span>{t.planEntAccess ? `${t.planEntAccess[0]} ` : 'Enlace '}<b className="text-[#d4af37]">{t.planEntAccess ? t.planEntAccess[1] : 'total (Omni)'}</b>{t.planEntAccess ? ` ${t.planEntAccess[2]}` : ' a la red'}</span></li>
+              <li className="flex items-start gap-3"><span className="text-[#d4af37] font-bold mt-0.5">⟩</span> <span>{t.planEntPlcs ? `${t.planEntPlcs[0]} ` : 'Sincronizar '}<b className="text-[#d4af37]">{t.planEntPlcs ? t.planEntPlcs[1] : 'Nodos infinitos'}</b>{t.planEntPlcs ? ` ${t.planEntPlcs[2]}` : ''}</span></li>
             </ul>
+            
             <div className="mt-8 w-full"></div>
             <button 
               disabled={userPlan === 'enterprise'}
               onClick={(e) => { e.preventDefault(); handleCheckout('enterprise'); }} 
-              className={`mt-auto w-full py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border ${userPlan === 'enterprise' ? 'bg-blue-600 text-white border-transparent' : 'bg-transparent border-blue-500/50 hover:bg-blue-600/20 text-blue-400 hover:text-white hover:border-blue-500'}`}
+              className={`mt-auto w-full py-3.5 font-mono font-bold uppercase tracking-widest text-xs transition-all relative ${userPlan === 'enterprise' ? 'bg-[#d4af37]/20 text-[#d4af37] border-transparent cursor-not-allowed' : 'bg-transparent border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]'}`}
+              style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
             >
-              {userPlan === 'enterprise' ? (t.active || 'Activo') : (t.fullAccess || 'Acceso Total')}
+              {userPlan === 'enterprise' ? (t.active || 'Sincronizado') : (t.fullAccess || 'Desbloquear Códigos')}
             </button>
           </div>
-          {/* Checkout Modal Flotante */}
+          {/* Checkout Modal Cyber-Azteca */}
           {showCheckout && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className="bg-[#1a1a1a] border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative animate-fade-in-up">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+              <div className="bg-[#050B0A] border border-[#10b981]/50 p-8 rounded-none w-full max-w-md shadow-[0_0_50px_rgba(16,185,129,0.3)] relative animate-fade-in-up [clip-path:polygon(0%_0%,_100%_0%,_100%_calc(100%_-_30px),_calc(100%_-_30px)_100%,_0%_100%)]">
+                {/* Decoration */}
+                <div className="absolute top-0 right-0 w-16 h-1 bg-[#10b981]"></div>
+                <div className="absolute top-0 right-0 w-1 h-16 bg-[#10b981]"></div>
+                <div className="absolute bottom-0 left-0 w-16 h-1 bg-[#10b981]"></div>
+                <div className="absolute bottom-0 left-0 w-1 h-16 bg-[#10b981]"></div>
+
                 <button 
                   onClick={() => !isProcessing && setShowCheckout(false)}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-none bg-[#10b981]/10 hover:bg-[#10b981]/30 text-[#10b981] transition-colors border border-[#10b981]/30 [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]"
                 >
                   ✕
                 </button>
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#00D4FF]/10 text-[#00D4FF] mb-4 shadow-[0_0_20px_rgba(0,212,255,0.2)]">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                <div className="text-center mb-8 mt-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-[#10b981]/10 text-[#10b981] mb-4 shadow-[0_0_20px_rgba(16,185,129,0.2)] border border-[#10b981]/50 rotate-45">
+                    <svg className="w-8 h-8 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{t.checkoutTitle || 'Finalizar Compra'}</h2>
-                  <p className="text-sm text-white/60">
-                    {t.checkoutDesc || 'Estás a un paso de activar tu suscripción'} <b className="text-white capitalize">{checkoutPlan === 'pro' ? (t.proPlan || 'Profesional') : (t.enterprisePlan || 'Enterprise')}</b>.
+                  <h2 className="text-2xl font-black font-mono text-[#10b981] uppercase tracking-[0.1em] mb-2">{t.checkoutTitle || 'Enlace de pago'}</h2>
+                  <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest">
+                    {t.checkoutDesc || 'Secuencia final para activar el núcleo'} <b className="text-[#10b981]">{checkoutPlan === 'pro' ? (t.proPlan || 'Élite') : (t.enterprisePlan || 'Omni-Códice')}</b>.
                   </p>
                 </div>
 
-                <div className="bg-black/50 rounded-xl p-4 mb-8 border border-white/5">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-white/60 text-sm">Plan {checkoutPlan === 'pro' ? (t.proPlan || 'Profesional') : (t.enterprisePlan || 'Enterprise')}</span>
-                    <span className="text-white font-bold">
+                <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
+                  <div className="absolute -inset-px bg-gradient-to-r from-transparent via-[#10b981]/10 to-transparent opacity-50 z-0"></div>
+                  
+                  <div className="flex justify-between items-center mb-2 relative z-10">
+                    <span className="text-emerald-100/60 font-mono text-sm uppercase tracking-wider">Módulo {checkoutPlan === 'pro' ? (t.proPlan || 'Élite') : (t.enterprisePlan || 'Omni-Códice')}</span>
+                    <span className="text-[#00f0ff] font-mono font-bold drop-shadow-[0_0_5px_#00f0ff]">
                       ${checkoutPlan === 'pro' ? (isAnnual ? 400 * 0.9 : 400) : (isAnnual ? 1000 * 0.9 : 1000)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-white/40">{t.planesDesc ? (isAnnual ? t.annual : t.monthly) : "Ciclo de facturación"}</span>
-                    <span className="text-white/70">{isAnnual ? `${t.annual || 'Anual'} (-10%)` : (t.monthly || 'Mensual')}</span>
+                  <div className="flex justify-between items-center text-xs relative z-10">
+                    <span className="text-emerald-100/40 font-mono tracking-widest uppercase">{t.planesDesc ? (isAnnual ? t.annual : t.monthly) : "Ciclo Activo"}</span>
+                    <span className="text-[#10b981]/70 font-mono tracking-widest uppercase">{isAnnual ? `${t.annual || 'Mayor'} (Eficiencia +10%)` : (t.monthly || 'Menor')}</span>
                   </div>
-                  <div className="h-px w-full bg-white/10 my-4"></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/80 font-bold">{t.totalToday || 'Total a pagar hoy'}</span>
-                    <span className="text-xl font-black text-[#00D4FF]">
+                  <div className="h-px w-full bg-emerald-900/50 my-4 relative z-10"></div>
+                  <div className="flex justify-between items-center relative z-10">
+                    <span className="text-emerald-50/80 font-mono font-bold tracking-widest uppercase text-sm">{t.totalToday || 'Inversión Total'}</span>
+                    <span className="text-xl font-mono font-black text-[#10b981] drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">
                       ${checkoutPlan === 'pro' ? (isAnnual ? 400 * 12 * 0.9 : 400) : (isAnnual ? 1000 * 12 * 0.9 : 1000)} USD
                     </span>
                   </div>
                 </div>
 
                 {paymentError && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-start gap-3 animate-[shake_0.5s_ease-in-out]">
-                    <div className="mt-0.5 bg-red-500/20 text-red-400 rounded-full p-1.5 shadow-[0_0_15px_rgba(239,68,68,0.3)] shrink-0">
+                  <div className="bg-red-950/40 border border-red-500/50 rounded-none p-4 mb-6 flex items-start gap-3 animate-[shake_0.5s_ease-in-out]">
+                    <div className="mt-0.5 bg-red-500/20 text-red-500 rounded-none p-1.5 shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-500/50 shrink-0">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div className="text-left">
-                      <h4 className="text-red-400 font-bold text-sm mb-1">{t.paymentFailed || 'Pago Rechazado'}</h4>
-                      <p className="text-red-400/80 text-xs leading-relaxed">
-                        {t.paymentErrorDesc || 'Lo sentimos, la conexión de pago falló o la tarjeta fue rechazada. Por favor, intenta de nuevo o comunícate con soporte.'}
+                      <h4 className="text-red-500 font-mono font-bold text-sm uppercase tracking-widest mb-1">{t.paymentFailed || 'Enlace Interrumpido'}</h4>
+                      <p className="text-red-400/80 font-mono text-[10px] uppercase tracking-wider leading-relaxed">
+                        {t.paymentErrorDesc || 'Fallo en la conexión de la pasarela. Fondos rechazados por la red central. Reintente o contacte a los arquitectos.'}
                       </p>
                     </div>
                   </div>
@@ -269,21 +335,21 @@ export default function PlanesPage() {
                 <button 
                   onClick={processPayment}
                   disabled={isProcessing}
-                  className="w-full bg-[#635BFF] hover:bg-[#7A73FF] text-white py-4 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(99,91,255,0.4)] hover:shadow-[0_0_30px_rgba(99,91,255,0.6)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[#10b981] hover:bg-[#0ea5e9] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(14,165,233,0.6)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
                 >
                   {isProcessing ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H8l4-7v6h3l-4 7z"/>
                     </svg>
                   )}
-                  {isProcessing ? (t.connectingTerminal || 'Conectando con terminal de pago...') : (paymentError ? (t.retryPayment || 'Reintentar Pago') : (t.paySecure || 'Pagar de forma Segura'))}
+                  {isProcessing ? (t.connectingTerminal || 'Sincronizando...') : (paymentError ? (t.retryPayment || 'Reintentar Enlace') : (t.paySecure || 'Aprobar Transacción'))}
                 </button>
                 <div className="mt-4 text-center">
-                  <span className="text-[10px] text-white/40 uppercase tracking-widest flex items-center justify-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    Pagos procesados por Stripe
+                  <span className="text-[9px] font-mono text-emerald-500/30 uppercase tracking-widest flex items-center justify-center gap-2">
+                    <svg className="w-3 h-3 text-[#10b981]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    CRIPTOGRAFÍA CENTRAL POR STRIPE
                   </span>
                 </div>
               </div>
