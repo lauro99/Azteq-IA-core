@@ -12,6 +12,7 @@ export default function RegistroPage() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
@@ -22,6 +23,12 @@ export default function RegistroPage() {
     
     if (!email || !username || !password) {
       setMessage(t.fillAllFields || 'Por favor llena todos los campos.');
+      setIsError(true);
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setMessage('Debes aceptar los Términos y Políticas para registrarte.');
       setIsError(true);
       return;
     }
@@ -116,6 +123,20 @@ export default function RegistroPage() {
                 disabled={isLoading}
                 className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full"
               />
+            </div>
+            
+            <div className="flex items-start gap-3 mt-2 pr-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                disabled={isLoading}
+                className="mt-1 w-4 h-4 bg-black/40 border border-white/30 rounded cursor-pointer accent-[#D4AF37]"
+              />
+              <label htmlFor="terms" className="text-white/60 text-[10px] leading-tight flex-1">
+                He leído y acepto los <Link href="/terminos-condiciones" className="text-[#D4AF37] hover:underline" target="_blank">Términos y Condiciones</Link>, la <Link href="/politica-privacidad" className="text-[#0D9488] hover:underline" target="_blank">Política de Privacidad</Link> y la <Link href="/politica-cookies" className="text-white/80 hover:underline" target="_blank">Política de Cookies</Link>.
+              </label>
             </div>
             
             {message && (

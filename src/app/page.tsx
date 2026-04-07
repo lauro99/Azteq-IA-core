@@ -501,8 +501,13 @@ export default function Home() {
             </>
           )}
         </main>
-        <footer className="w-full mt-4 pt-4 border-t border-white/10 text-center text-xs text-white/40 tracking-widest uppercase">
-          <p>{t.footer}</p>
+        <footer className="w-full mt-4 pt-4 pb-4 border-t border-white/10 text-center flex flex-col items-center gap-2">
+          <p className="text-xs text-white/40 tracking-widest uppercase">{t.footer}</p>
+          <div className="flex flex-wrap justify-center gap-4 text-[10px] text-white/30 uppercase tracking-widest">
+            <Link href="/politica-privacidad" className="hover:text-[#0D9488] transition-colors">Privacidad y Seguridad</Link>
+            <Link href="/terminos-condiciones" className="hover:text-[#D4AF37] transition-colors">Términos Industriales</Link>
+            <Link href="/politica-cookies" className="hover:text-white/70 transition-colors">Normativa Cookies</Link>
+          </div>
         </footer>
       </div>
 
