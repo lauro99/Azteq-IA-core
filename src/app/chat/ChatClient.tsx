@@ -243,7 +243,7 @@ export default function ChatClient() {
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="bg-[#121927]/80 backdrop-blur-md border-[2px] border-[#E8C673] p-2 text-[#E8C673] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.6)] hover:bg-[#E8C673]/20 transition-all flex items-center justify-center"
-          title="Ver Chats"
+          title={(t as any)?.viewChats || "Ver Chats"}
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />

@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function RegistroPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,7 +21,7 @@ export default function RegistroPage() {
     setMessage('');
     
     if (!email || !username || !password) {
-      setMessage('Por favor llena todos los campos.');
+      setMessage(t.fillAllFields || 'Por favor llena todos los campos.');
       setIsError(true);
       return;
     }
@@ -30,7 +32,7 @@ export default function RegistroPage() {
     const hasNumber = /[0-9]/.test(password);
 
     if (password.length < 6 || !hasUpperCase || !hasSpecialChar || !hasNumber) {
-      setMessage('La contraseña debe tener al menos 6 caracteres (incluyendo números), 1 mayúscula y 1 símbolo especial (#$%&).');
+      setMessage(t.passwordRequirements || 'La contraseña debe tener al menos 6 caracteres (incluyendo números), 1 mayúscula y 1 símbolo especial (#$%&).');
       setIsError(true);
       return;
     }
@@ -51,11 +53,11 @@ export default function RegistroPage() {
     });
     
     if (error) {
-      setMessage(error.message || 'Error al registrarte. Intenta de nuevo.');
+      setMessage(error.message || t.registerError || 'Error al registrarte. Intenta de nuevo.');
       setIsError(true);
       setIsLoading(false);
     } else {
-      setMessage('Redirigiendo al sistema...');
+      setMessage(t.redirecting || 'Redirigiendo al sistema...');
       setIsError(false);
       // Supabase por defecto inicia sesión automáticamente si no requiere confirmación de email
       router.push('/');
@@ -76,15 +78,15 @@ export default function RegistroPage() {
           </div>
           
           <h1 className="text-xl font-bold text-white mb-8 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] text-center uppercase">
-            Registro de Operador
+            {t.registerOperator || 'Registro de Operador'}
           </h1>
           
           <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Nombre de Operador</label>
+              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">{t.operatorName || 'Nombre de Operador'}</label>
               <input
                 type="text"
-                placeholder="Ej. Juan Perez"
+                placeholder={t.operatorNamePlaceholder || "Ej. Juan Perez"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -93,10 +95,10 @@ export default function RegistroPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Correo electrónico</label>
+              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">{t.emailAddress || 'Correo electrónico'}</label>
               <input
                 type="email"
-                placeholder="operador@ejemplo.com"
+                placeholder={t.emailPlaceholder || "operador@ejemplo.com"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -105,10 +107,10 @@ export default function RegistroPage() {
             </div>
             
             <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Contraseña</label>
+              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">{t.password || 'Contraseña'}</label>
               <input
                 type="password"
-                placeholder="6 caracteres, 1 número, 1 mayú, 1 símbolo"
+                placeholder={t.passwordPlaceholder || "6 caracteres, 1 número, 1 mayú, 1 símbolo"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -127,7 +129,7 @@ export default function RegistroPage() {
               disabled={isLoading}
               className="mt-4 bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 text-black px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 w-full shadow-[0_4px_15px_rgba(212,175,55,0.3)]"
             >
-              {isLoading ? 'Registrando...' : 'Registrar'}
+              {isLoading ? (t.registering || 'Registrando...') : (t.registerAction || 'Registrar')}
             </button>
           </form>
 
@@ -139,7 +141,7 @@ export default function RegistroPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Volver al Inicio
+              {t.backToHome || 'Volver al Inicio'}
             </Link>
           </div>
         </div>

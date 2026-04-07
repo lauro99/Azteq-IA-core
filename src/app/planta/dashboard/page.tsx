@@ -283,7 +283,7 @@ export default function PlantDashboard() {
             <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Cambiar Plan</span>
+            <span>{(t as any).changePlan || 'Cambiar Plan'}</span>
           </button>
           <div className="h-6 w-px bg-white/20"></div>
           <span className="font-bold text-sm tracking-widest uppercase text-[#E8C673]">

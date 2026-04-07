@@ -77,7 +77,7 @@ export default function PlantaBrandSelection() {
             <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Cambiar Plan</span>
+            <span>{(t as any).changePlan || 'Cambiar Plan'}</span>
           </button>
           <button
             onClick={() => router.push('/planta/ayuda')}
