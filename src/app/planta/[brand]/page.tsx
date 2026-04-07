@@ -910,7 +910,7 @@ function PlcDashboardContent() {
                       <span className="text-3xl font-black text-white">
                         {plcData?.[tag.name] !== undefined 
                           ? (typeof plcData[tag.name] === 'boolean' 
-                              ? <span className={plcData[tag.name] ? "text-green-500" : "text-neutral-500"}>{plcData[tag.name] ? 'TRUE' : 'FALSE'}</span> 
+                              ? <span className={plcData[tag.name] ? "text-green-500" : "text-red-500"}>{plcData[tag.name] ? 'ON' : 'OFF'}</span> 
                               : plcData[tag.name]) 
                           : '--'}
                         {tag.unit ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>)}
