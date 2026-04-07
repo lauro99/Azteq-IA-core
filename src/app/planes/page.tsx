@@ -18,6 +18,12 @@ export default function PlanesPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(false);
   const [supportValidated, setSupportValidated] = useState(false);
+  
+  // States for the new contact form
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactData, setContactData] = useState({ name: '', phone: '', company: '' });
+  const [isSendingContact, setIsSendingContact] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
 
   const handleCheckout = async (plan: 'pro' | 'enterprise') => {
     if (!supportValidated) {
@@ -38,6 +44,31 @@ export default function PlanesPage() {
       setIsProcessing(false);
       setPaymentError(true);
     }, 2000);
+  };
+
+  const submitContactForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSendingContact(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email || 'Usuario Desconocido';
+      
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactData.name,
+          phone: contactData.phone,
+          company: contactData.company,
+          email,
+          plan: checkoutPlan === 'pro' ? 'Pro (Élite)' : 'Enterprise (Omni-Códice)'
+        }),
+      });
+      if (res.ok) setContactSuccess(true);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsSendingContact(false);
   };
 
   useEffect(() => {
@@ -336,7 +367,7 @@ export default function PlanesPage() {
                     <div className="text-left">
                       <h4 className="text-red-500 font-mono font-bold text-sm uppercase tracking-widest mb-1">{t.paymentFailed || 'Enlace Interrumpido'}</h4>
                       <p className="text-red-400/80 font-mono text-[10px] uppercase tracking-wider leading-relaxed">
-                        {t.paymentErrorDesc || 'Fallo en la conexión de la pasarela. Fondos rechazados por la red central. Reintente o contacte a los arquitectos.'}
+                        {t.paymentErrorDesc || 'Fallo en la conexión de la pasarela. Fondos rechazados por la red central. Reintente o contacte a soporte técnico.'}
                       </p>
                     </div>
                   </div>
@@ -377,39 +408,99 @@ export default function PlanesPage() {
                   <div className="absolute bottom-0 left-0 w-1 h-16 bg-[#d4af37]"></div>
 
                   <button 
-                    onClick={() => setShowSupportModal(false)}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-none bg-[#d4af37]/10 hover:bg-[#d4af37]/30 text-[#d4af37] transition-colors border border-[#d4af37]/30 [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]"
+                    onClick={() => { setShowSupportModal(false); setShowContactForm(false); setContactSuccess(false); setContactData({ name: '', phone: '', company: '' }); }}
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-none bg-[#d4af37]/10 hover:bg-[#d4af37]/30 text-[#d4af37] transition-colors border border-[#d4af37]/30 [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)] z-10"
                   >
                     ✕
                   </button>
 
-                  <div className="text-center mb-8 mt-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 text-[#d4af37] mb-4 shadow-[0_0_20px_rgba(212,175,55,0.2)] border border-[#d4af37]/50 rotate-45">
-                      <svg className="w-8 h-8 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
+                  {contactSuccess ? (
+                    <div className="text-center mb-4 mt-4">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/10 text-emerald-400 mb-4 shadow-[0_0_20px_rgba(16,185,129,0.2)] border border-emerald-500/50 rounded-full animate-bounce">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      </div>
+                      <h2 className="text-xl font-black font-mono text-emerald-400 uppercase tracking-[0.1em] mb-2">Petición Recibida</h2>
+                      <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
+                        El equipo de Soporte Técnico ha sido notificado. Nos contactaremos pronto para iniciar el proceso de validación en tu planta.
+                      </p>
+                      <button 
+                        onClick={() => { setShowSupportModal(false); setShowContactForm(false); setContactSuccess(false); }}
+                        className="mt-8 w-full bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
+                      >
+                        Cerrar Enlace
+                      </button>
                     </div>
-                    <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">Validación Requerida</h2>
-                    <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
-                      Para activar el nivel <b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>, 
-                      nuestro equipo de soporte primero debe certificar empíricamente el montaje completo de la infraestructura en tu planta.
-                    </p>
-                  </div>
+                  ) : showContactForm ? (
+                    <div className="text-center mb-2 mt-4 space-y-4">
+                      <div className="flex items-center gap-3 mb-6 justify-center">
+                        <button onClick={() => setShowContactForm(false)} className="text-[#d4af37]/70 hover:text-[#d4af37]">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em]">Formulario_Azteq</h2>
+                      </div>
+                      <form onSubmit={submitContactForm} className="space-y-4 text-left">
+                        <div>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Nombre Operador</label>
+                          <input required type="text" value={contactData.name} onChange={(e) => setContactData({...contactData, name: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="Ej. Juan Pérez" />
+                        </div>
+                        <div>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Teléfono Enlace</label>
+                          <input required type="tel" value={contactData.phone} onChange={(e) => setContactData({...contactData, phone: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="+52 123 456 7890" />
+                        </div>
+                        <div>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Planta / Empresa</label>
+                          <input required type="text" value={contactData.company} onChange={(e) => setContactData({...contactData, company: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="Nombre Empresa S.A. de C.V." />
+                        </div>
+                        <button 
+                          type="submit"
+                          disabled={isSendingContact}
+                          className="w-full mt-4 bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
+                        >
+                          {isSendingContact ? 'Transmitiendo...' : 'Contactar Soporte Técnico'}
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center mb-8 mt-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 text-[#d4af37] mb-4 shadow-[0_0_20px_rgba(212,175,55,0.2)] border border-[#d4af37]/50 rotate-45">
+                          <svg className="w-8 h-8 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        </div>
+                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">Validación Requerida</h2>
+                        <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
+                          Para activar el nivel <b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>, 
+                          nuestro equipo de soporte primero debe certificar empíricamente el montaje completo de la infraestructura en tu planta.
+                        </p>
+                      </div>
 
-                  <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
-                    <p className="text-xs text-emerald-100/70 font-mono text-center uppercase leading-loose">
-                      1. Requieres instalación en vivo.<br/>
-                      2. Los arquitectos validan tu nodo.<br/>
-                      3. Se desbloquea el pago.
-                    </p>
-                  </div>
+                      <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
+                        <p className="text-xs text-emerald-100/70 font-mono text-center uppercase leading-loose">
+                          1. Requieres instalación en vivo.<br/>
+                          2. Soporte técnico valida tu equipo.<br/>
+                          3. Se desbloquea el pago.
+                        </p>
+                      </div>
 
-                  <button 
-                    onClick={() => setShowSupportModal(false)}
-                    className="w-full bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
-                  >
-                    Entendido
-                  </button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => { setShowSupportModal(false); setShowContactForm(false); }}
+                          className="w-1/3 bg-transparent border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all"
+                        >
+                          Atrás
+                        </button>
+                        <button 
+                          onClick={() => setShowContactForm(true)}
+                          className="flex-1 bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
+                        >
+                          Contactar Soporte
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

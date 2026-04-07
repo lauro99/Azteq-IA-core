@@ -167,6 +167,7 @@ export default function Home() {
                   placeholder={t.emailAddress || "Correo electrónico"} 
                   value={operatorId || ''}
                   onChange={(e) => setOperatorId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
                   disabled={isLoading}
                   className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
@@ -175,6 +176,7 @@ export default function Home() {
                   placeholder={t.password || "Contraseña"} 
                   value={accessCode || ''}
                   onChange={(e) => setAccessCode(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
                   disabled={isLoading}
                   className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
@@ -237,10 +239,10 @@ export default function Home() {
                     </li>
                   </ul>
                   <button 
-                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-white/10 hover:bg-[#0D9488] text-white hover:text-black py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(13,148,136,0.4)]"
                   >
-                    {t.startFree || 'Comenzar Gratis'}
+                    {t.registerFree || 'Crear Cuenta Gratis'}
                   </button>
                 </div>
 
@@ -268,10 +270,10 @@ export default function Home() {
                     </li>
                   </ul>
                   <button 
-                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-[#D4AF37] hover:bg-[#F2CD5C] text-black py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:scale-105 active:scale-95"
                   >
-                    {t.subscribe || 'Suscribirme'}
+                    {t.registerPro || 'Registrarse para Suscribir'}
                   </button>
                 </div>
 
@@ -293,10 +295,10 @@ export default function Home() {
                     </li>
                   </ul>
                   <button 
-                    onClick={() => document.getElementById('operatorIdInput')?.focus()}
+                    onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-white/10 hover:bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                   >
-                    {t.fullAccess || 'Acceso Total'}
+                    {t.registerEnt || 'Registrarse para Acceso'}
                   </button>
                 </div>
               </div>
