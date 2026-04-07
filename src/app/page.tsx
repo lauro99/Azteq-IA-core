@@ -242,7 +242,7 @@ export default function Home() {
                     onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-white/10 hover:bg-[#0D9488] text-white hover:text-black py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(13,148,136,0.4)]"
                   >
-                    {t.registerFree || 'Crear Cuenta Gratis'}
+                    {(t as any).registerFree || 'Crear Cuenta Gratis'}
                   </button>
                 </div>
 
@@ -273,7 +273,7 @@ export default function Home() {
                     onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-[#D4AF37] hover:bg-[#F2CD5C] text-black py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:scale-105 active:scale-95"
                   >
-                    {t.registerPro || 'Registrarse para Suscribir'}
+                    {(t as any).registerPro || 'Registrarse para Suscribir'}
                   </button>
                 </div>
 
@@ -298,7 +298,7 @@ export default function Home() {
                     onClick={() => router.push('/registro')}
                     className="mt-auto w-full bg-white/10 hover:bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                   >
-                    {t.registerEnt || 'Registrarse para Acceso'}
+                    {(t as any).registerEnt || 'Registrarse para Acceso'}
                   </button>
                 </div>
               </div>
