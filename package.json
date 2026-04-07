@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "recolector": "node --env-file=.env.local recolector.js",
+    "recolector:multi": "node --env-file=.env.local recolector_variosPLCS.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",

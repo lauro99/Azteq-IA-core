@@ -13,11 +13,18 @@ export default function PlanesPage() {
   const [loading, setLoading] = useState(true);
   const [isAnnual, setIsAnnual] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | 'enterprise'>('pro');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(false);
+  const [supportValidated, setSupportValidated] = useState(false);
 
   const handleCheckout = async (plan: 'pro' | 'enterprise') => {
+    if (!supportValidated) {
+      setCheckoutPlan(plan);
+      setShowSupportModal(true);
+      return;
+    }
     setPaymentError(false);
     setCheckoutPlan(plan);
     setShowCheckout(true);
@@ -43,12 +50,15 @@ export default function PlanesPage() {
       
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('plan')
+        .select('*')
         .eq('id', session.user.id)
         .single();
         
       if (profile?.plan) {
         setUserPlan(profile.plan);
+      }
+      if (profile?.support_validated) {
+        setSupportValidated(true);
       }
       setLoading(false);
     };
@@ -211,7 +221,7 @@ export default function PlanesPage() {
               className={`mt-auto w-full py-4 font-mono font-bold uppercase tracking-[0.1em] text-sm transition-all group-hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] ${userPlan === 'pro' ? 'bg-[#10b981] text-black' : 'bg-[#10b981]/20 hover:bg-[#10b981] border border-[#10b981] text-[#10b981] hover:text-black'}`}
               style={{ clipPath: 'polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px)' }}
             >
-              {userPlan === 'pro' ? (t.active || 'Sincronizado') : (t.upgradePro || 'Ascender Rango')}
+              {userPlan === 'pro' ? (t.active || 'Sincronizado') : (!supportValidated ? 'Validar Montaje ↑' : (t.upgradePro || 'Aprobar Pago ↑'))}
             </button>
           </div>
 
@@ -263,7 +273,7 @@ export default function PlanesPage() {
               className={`mt-auto w-full py-3.5 font-mono font-bold uppercase tracking-widest text-xs transition-all relative ${userPlan === 'enterprise' ? 'bg-[#d4af37]/20 text-[#d4af37] border-transparent cursor-not-allowed' : 'bg-transparent border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]'}`}
               style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
             >
-              {userPlan === 'enterprise' ? (t.active || 'Sincronizado') : (t.fullAccess || 'Desbloquear Códigos')}
+              {userPlan === 'enterprise' ? (t.active || 'Sincronizado') : (!supportValidated ? 'Validar Montaje ↑' : (t.fullAccess || 'Aprobar Pago ↑'))}
             </button>
           </div>
           {/* Checkout Modal Cyber-Azteca */}
@@ -355,8 +365,56 @@ export default function PlanesPage() {
               </div>
             </div>
           )}
-        </div>
-      </main>
-    </div>
-  );
-}
+
+            {/* Support Validation Modal */}
+            {showSupportModal && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+                <div className="bg-[#050B0A] border border-[#d4af37]/50 p-8 rounded-none w-full max-w-md shadow-[0_0_50px_rgba(212,175,55,0.3)] relative animate-fade-in-up [clip-path:polygon(0%_0%,_100%_0%,_100%_calc(100%_-_30px),_calc(100%_-_30px)_100%,_0%_100%)]">
+                  {/* Decoration Gold */}
+                  <div className="absolute top-0 right-0 w-16 h-1 bg-[#d4af37]"></div>
+                  <div className="absolute top-0 right-0 w-1 h-16 bg-[#d4af37]"></div>
+                  <div className="absolute bottom-0 left-0 w-16 h-1 bg-[#d4af37]"></div>
+                  <div className="absolute bottom-0 left-0 w-1 h-16 bg-[#d4af37]"></div>
+
+                  <button 
+                    onClick={() => setShowSupportModal(false)}
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-none bg-[#d4af37]/10 hover:bg-[#d4af37]/30 text-[#d4af37] transition-colors border border-[#d4af37]/30 [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)]"
+                  >
+                    ✕
+                  </button>
+
+                  <div className="text-center mb-8 mt-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-[#d4af37]/10 text-[#d4af37] mb-4 shadow-[0_0_20px_rgba(212,175,55,0.2)] border border-[#d4af37]/50 rotate-45">
+                      <svg className="w-8 h-8 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">Validación Requerida</h2>
+                    <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
+                      Para activar el nivel <b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>, 
+                      nuestro equipo de soporte primero debe certificar empíricamente el montaje completo de la infraestructura en tu planta.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
+                    <p className="text-xs text-emerald-100/70 font-mono text-center uppercase leading-loose">
+                      1. Requieres instalación en vivo.<br/>
+                      2. Los arquitectos validan tu nodo.<br/>
+                      3. Se desbloquea el pago.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={() => setShowSupportModal(false)}
+                    className="w-full bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
