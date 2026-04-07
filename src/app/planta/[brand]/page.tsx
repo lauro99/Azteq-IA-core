@@ -116,7 +116,10 @@ function PlcDashboardContent() {
   };
 
   const handleSavePlc = async () => {
-    if (!newPlcName || !ipAddress || !user) return showToast("Falta nombre o IP para guardar el PLC", "error"); return;
+    if (!newPlcName || !ipAddress || !user) {
+      showToast("Falta nombre o IP para guardar el PLC", "error");
+      return;
+    }
     
     setIsSaving(true);
     try {
@@ -905,7 +908,11 @@ function PlcDashboardContent() {
                     <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
                       <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
                       <span className="text-3xl font-black text-white">
-                        {plcData?.[tag.name] !== undefined ? plcData[tag.name] : '--'}
+                        {plcData?.[tag.name] !== undefined 
+                          ? (typeof plcData[tag.name] === 'boolean' 
+                              ? <span className={plcData[tag.name] ? "text-green-500" : "text-neutral-500"}>{plcData[tag.name] ? 'TRUE' : 'FALSE'}</span> 
+                              : plcData[tag.name]) 
+                          : '--'}
                         {tag.unit ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>)}
                       </span>
                     </div>
