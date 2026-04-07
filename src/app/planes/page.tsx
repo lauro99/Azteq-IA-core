@@ -253,7 +253,7 @@ export default function PlanesPage() {
               className={`mt-auto w-full py-4 font-mono font-bold uppercase tracking-[0.1em] text-sm transition-all group-hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] ${userPlan === 'pro' ? 'bg-[#10b981] text-black' : 'bg-[#10b981]/20 hover:bg-[#10b981] border border-[#10b981] text-[#10b981] hover:text-black'}`}
               style={{ clipPath: 'polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px)' }}
             >
-              {userPlan === 'pro' ? (t.active || 'Sincronizado') : (!supportValidated ? 'Validar Montaje ↑' : (t.upgradePro || 'Aprobar Pago ↑'))}
+              {userPlan === 'pro' ? (t.active || 'Sincronizado') : (!supportValidated ? `${t.validateMount} ↑` : (t.upgradePro || 'Aprobar Pago ↑'))}
             </button>
           </div>
 
@@ -305,7 +305,7 @@ export default function PlanesPage() {
               className={`mt-auto w-full py-3.5 font-mono font-bold uppercase tracking-widest text-xs transition-all relative ${userPlan === 'enterprise' ? 'bg-[#d4af37]/20 text-[#d4af37] border-transparent cursor-not-allowed' : 'bg-transparent border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]'}`}
               style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}
             >
-              {userPlan === 'enterprise' ? (t.active || 'Sincronizado') : (!supportValidated ? 'Validar Montaje ↑' : (t.fullAccess || 'Aprobar Pago ↑'))}
+              {userPlan === 'enterprise' ? (t.active || 'Sincronizado') : (!supportValidated ? `${t.validateMount} ↑` : (t.fullAccess || 'Aprobar Pago ↑'))}
             </button>
           </div>
           {/* Checkout Modal Cyber-Azteca */}
@@ -422,15 +422,15 @@ export default function PlanesPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                       </div>
-                      <h2 className="text-xl font-black font-mono text-emerald-400 uppercase tracking-[0.1em] mb-2">Petición Recibida</h2>
+                      <h2 className="text-xl font-black font-mono text-emerald-400 uppercase tracking-[0.1em] mb-2">{t.reqReceived}</h2>
                       <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
-                        El equipo de Soporte Técnico ha sido notificado. Nos contactaremos pronto para iniciar el proceso de validación en tu planta.
+                        {t.supportNotified}
                       </p>
                       <button 
                         onClick={() => { setShowSupportModal(false); setShowContactForm(false); setContactSuccess(false); }}
                         className="mt-8 w-full bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
                       >
-                        Cerrar Enlace
+                        {t.closeLink}
                       </button>
                     </div>
                   ) : showContactForm ? (
@@ -439,15 +439,15 @@ export default function PlanesPage() {
                         <button onClick={() => setShowContactForm(false)} className="text-[#d4af37]/70 hover:text-[#d4af37]">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         </button>
-                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em]">Formulario_Azteq</h2>
+                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em]">{t.azteqForm}</h2>
                       </div>
                       <form onSubmit={submitContactForm} className="space-y-4 text-left">
                         <div>
-                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Nombre Operador</label>
-                          <input required type="text" value={contactData.name} onChange={(e) => setContactData({...contactData, name: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="Ej. Juan Pérez" />
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">{t.operatorNameForm}</label>
+                          <input required type="text" value={contactData.name} onChange={(e) => setContactData({...contactData, name: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder={t.operatorNamePlaceholder || 'Ej. Juan Pérez'} />
                         </div>
                         <div>
-                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Teléfono Enlace</label>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">{t.phoneLinkForm}</label>
                           <input required type="tel" value={contactData.phone} onChange={(e) => setContactData({...contactData, phone: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="+52 123 456 7890" />
                         </div>
                         <div>
@@ -455,15 +455,15 @@ export default function PlanesPage() {
                           <input required type="text" value={contactData.company} onChange={(e) => setContactData({...contactData, company: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="Nombre Empresa S.A. de C.V." />
                         </div>
                         <div>
-                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Mensaje para Soporte</label>
-                          <textarea rows={3} value={contactData.message} onChange={(e) => setContactData({...contactData, message: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50 resize-none" placeholder="Ingresa dudas, detalles de tus máquinas plc o necesidades..."></textarea>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">{t.supportMsgLabel}</label>
+                          <textarea rows={3} value={contactData.message} onChange={(e) => setContactData({...contactData, message: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50 resize-none" placeholder={t.supportMsgPlaceholder}></textarea>
                         </div>
-                        <button 
+                        <button
                           type="submit"
                           disabled={isSendingContact}
                           className="w-full mt-4 bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
                         >
-                          {isSendingContact ? 'Transmitiendo...' : 'Contactar Soporte Técnico'}
+                          {isSendingContact ? t.transmitting : t.contactTechSupport}
                         </button>
                       </form>
                     </div>
@@ -475,33 +475,32 @@ export default function PlanesPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                           </svg>
                         </div>
-                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">Validación Requerida</h2>
+                        <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">{t.valRequired}</h2>
                         <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
-                          Para activar el nivel <b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>, 
-                          nuestro equipo de especialistas debe acudir a tu planta para levantar la infraestructura. Nos encargamos de que todo el entorno quede completamente protegido, configurado y listo para funcionar al 100%.
+                          {t.valEmpirical1}<b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>{t.valEmpirical2}
                         </p>
                       </div>
 
                       <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
                         <p className="text-xs text-emerald-100/70 font-mono text-center uppercase leading-loose">
-                          1. Agendamos instalación presencial.<br/>
-                          2. Desplegamos y aseguramos tu equipo.<br/>
-                          3. Se desbloquea el pago.
+                          {t.valStep1}<br/>
+                          {t.valStep2}<br/>
+                          {t.valStep3}
                         </p>
                       </div>
 
                       <div className="flex gap-4">
-                        <button 
+                        <button
                           onClick={() => { setShowSupportModal(false); setShowContactForm(false); }}
                           className="w-1/3 bg-transparent border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all"
                         >
-                          Atrás
+                          {t.backBtn}
                         </button>
-                        <button 
+                        <button
                           onClick={() => setShowContactForm(true)}
                           className="flex-1 bg-[#d4af37] hover:bg-[#b08d2b] text-black py-4 rounded-none font-mono font-bold uppercase tracking-[0.1em] transition-all shadow-[0_0_20px_rgba(212,175,55,0.4)] flex items-center justify-center gap-3 [clip-path:polygon(15px_0,100%_0,100%_calc(100%-15px),calc(100%-15px)_100%,0_100%,0_15px)]"
                         >
-                          Contactar Soporte
+                          {t.contactSupport || 'Contactar Soporte'}
                         </button>
                       </div>
                     </>
