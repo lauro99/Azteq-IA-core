@@ -478,14 +478,14 @@ export default function PlanesPage() {
                         <h2 className="text-xl font-black font-mono text-[#d4af37] uppercase tracking-[0.1em] mb-2">Validación Requerida</h2>
                         <p className="text-sm font-mono text-emerald-200/60 uppercase tracking-widest mt-4">
                           Para activar el nivel <b className="text-[#d4af37]">{checkoutPlan === 'pro' ? 'Pro' : 'Enterprise'}</b>, 
-                          nuestro equipo de soporte primero debe certificar empíricamente el montaje completo de la infraestructura en tu planta.
+                          nuestro equipo de especialistas debe acudir a tu planta para levantar la infraestructura. Nos encargamos de que todo el entorno quede completamente protegido, configurado y listo para funcionar al 100%.
                         </p>
                       </div>
 
                       <div className="bg-[#020403] rounded-none p-4 mb-8 border border-emerald-900/50 [clip-path:polygon(10px_0,100%_0,100%_100%,0_100%,0_10px)] relative">
                         <p className="text-xs text-emerald-100/70 font-mono text-center uppercase leading-loose">
-                          1. Requieres instalación en vivo.<br/>
-                          2. Soporte técnico valida tu equipo.<br/>
+                          1. Agendamos instalación presencial.<br/>
+                          2. Desplegamos y aseguramos tu equipo.<br/>
                           3. Se desbloquea el pago.
                         </p>
                       </div>
