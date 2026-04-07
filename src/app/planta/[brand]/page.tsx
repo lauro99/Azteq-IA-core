@@ -66,6 +66,27 @@ function PlcDashboardContent() {
   };
 
   useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/');
+        return;
+      }
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('plan')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profile?.plan === 'free') {
+        router.push('/planes');
+        return;
+      }
+    };
+    checkUser();
+  }, [router]);
+
+  useEffect(() => {
     if (brandId === 'siemens') {
       if (plcModel === 's7-1200' || plcModel === 's7-1500' || plcModel === 'logo') {
         setSlot('0');
@@ -117,9 +138,9 @@ function PlcDashboardContent() {
       
       showToast(`${newPlcName} guardado con éxito`, "success");
       
-      if (data && data.length > 0) {
-        setSavedPLCs(prev => [...prev, data[0]]);
-        setSelectedPlcId(data[0].id);
+      if (data && (data as any).length > 0) {
+        setSavedPLCs(prev => [...prev, (data as any)[0]]);
+        setSelectedPlcId((data as any)[0].id);
       }
     } catch (err: any) {
       showToast("Error al guardar: " + err.message, "error");

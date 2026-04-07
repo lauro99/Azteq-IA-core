@@ -9,6 +9,8 @@ import { useLanguage } from '@/components/LanguageContext';
 
 
 export default function PlantDashboard() {
+  const router = useRouter();
+  const { t } = useLanguage();
   // Estado para mostrar/ocultar variables por PLC
   const [showVars, setShowVars] = useState<Record<string, boolean>>({});
   // Estado para userId
@@ -19,6 +21,28 @@ export default function PlantDashboard() {
     const [editingGroup, setEditingGroup] = useState<any>(null);
     const [groupLoading, setGroupLoading] = useState(false);
     const [groupError, setGroupError] = useState<string | null>(null);
+
+    useEffect(() => {
+      const checkUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/');
+          return;
+        }
+        setUserId(session.user.id);
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('plan')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile?.plan === 'free') {
+          router.push('/planes');
+          return;
+        }
+      };
+      checkUser();
+    }, [router]);
 
     // Obtener grupos del usuario
     useEffect(() => {
@@ -80,8 +104,6 @@ export default function PlantDashboard() {
       setGroupLoading(false);
     };
 
-  const router = useRouter();
-  const { t } = useLanguage();
   const [liveData, setLiveData] = useState<Record<string, any>>({});
   const [plcConnErrors, setPlcConnErrors] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
@@ -254,6 +276,15 @@ export default function PlantDashboard() {
         </button>
         <div className="flex items-center gap-4">
           <LanguageSelector />
+          <button
+            onClick={() => router.push('/planes')}
+            className="hidden sm:flex group flex-row items-center justify-center gap-1.5 bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] hover:from-[#1e1b4b] hover:to-[#312e81] border border-indigo-500/30 hover:border-indigo-400/50 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_4px_10px_rgba(79,70,229,0.15)] hover:shadow-[0_4px_15px_rgba(79,70,229,0.3)]"
+          >
+            <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Cambiar Plan</span>
+          </button>
           <div className="h-6 w-px bg-white/20"></div>
           <span className="font-bold text-sm tracking-widest uppercase text-[#E8C673]">
             {t.dbVisionTitle}

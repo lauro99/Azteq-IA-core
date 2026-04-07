@@ -136,6 +136,15 @@ export default function Home() {
                     <span className="text-sm group-hover:rotate-90 transition-transform duration-500">❂</span>
                   </Link>
                 )}
+                <Link
+                  href="/planes"
+                  className="group flex flex-col sm:flex-row items-center justify-center gap-1.5 bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] hover:from-[#1e1b4b] hover:to-[#312e81] border border-indigo-500/30 hover:border-indigo-400/50 text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_4px_10px_rgba(79,70,229,0.15)] hover:shadow-[0_4px_15px_rgba(79,70,229,0.3)]"
+                >
+                  <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>Cambiar Plan</span>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   disabled={isLoading}
@@ -205,7 +214,7 @@ export default function Home() {
         >
           {/* SI EL USUARIO NO ESTÁ LOGUEADO, MOSTRAMOS LOS PLANES */}
           {!user ? (
-            <div className="w-full flex flex-col items-center justify-center gap-6 z-20 overflow-y-auto">
+            <div id="planes" className="w-full flex flex-col items-center justify-center gap-6 z-20 overflow-y-auto">
               <div className="text-center mb-2 mt-12 md:mt-24 px-4 bg-black/40 backdrop-blur-md rounded-2xl py-4 border border-white/5">
                 <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-4 tracking-tight drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">Elige tu Plan</h2>
                 <p className="text-white/80 text-xs md:text-sm max-w-xl mx-auto">Selecciona la suscripción que mejor se adapte a tus necesidades para acceder al sistema.</p>
@@ -217,8 +226,8 @@ export default function Home() {
                   <div className="w-12 h-12 bg-white/5 border border-white/10 text-white rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <span className="text-xl">🆓</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Básico / Free</h3>
-                  <div className="text-3xl font-extrabold text-[#0D9488] mb-4 drop-shadow-[0_0_10px_rgba(13,148,136,0.3)]">$0 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <h3 className="text-xl font-bold text-white mb-2">Básico</h3>
+                  <div className="text-3xl font-extrabold text-[#0D9488] mb-4 drop-shadow-[0_0_10px_rgba(13,148,136,0.3)]">$0 <span className="text-sm text-white/50 font-normal">USD /mes</span></div>
                   <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
                     <li className="flex items-start gap-2">
                       <span className="text-[#0D9488] font-bold mt-0.5">✓</span> Acceso a la IA Experta
@@ -244,7 +253,7 @@ export default function Home() {
                     <span className="text-2xl">⚡</span>
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">Profesional</h3>
-                  <div className="text-4xl font-extrabold text-[#D4AF37] mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">$400 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <div className="text-4xl font-extrabold text-[#D4AF37] mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">$400 <span className="text-sm text-white/50 font-normal">USD /mes</span></div>
                   <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
                     <li className="flex items-start gap-2">
                       <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> Acceso <b className="text-white">ilimitado</b> a la IA Experta
@@ -270,7 +279,7 @@ export default function Home() {
                     <span className="text-xl">🏢</span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">Acceso Libre</h3>
-                  <div className="text-3xl font-extrabold text-blue-400 mb-4 drop-shadow-[0_0_10px_rgba(96,165,250,0.3)]">$1000 <span className="text-sm text-white/50 font-normal">/mes</span></div>
+                  <div className="text-3xl font-extrabold text-blue-400 mb-4 drop-shadow-[0_0_10px_rgba(96,165,250,0.3)]">$1000 <span className="text-sm text-white/50 font-normal">USD /mes</span></div>
                   <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
                     <li className="flex items-start gap-2">
                       <span className="text-blue-400 font-bold mt-0.5">✓</span> Acceso <b className="text-white">total e ilimitado</b> al sistema
@@ -359,6 +368,10 @@ export default function Home() {
                   setExpandedCard('plant');
                   return;
                 }
+                if (userPlan === 'free') {
+                  router.push('/planes');
+                  return;
+                }
                 if (user) {
                   router.push('/planta');
                 } else {
@@ -385,8 +398,8 @@ export default function Home() {
               </button>
 
               <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'plant' ? 'opacity-100' : 'opacity-0'}`}>
-                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                <span className={`${user ? (userPlan === 'free' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-[#D4AF37]/50 text-[#FFF5D1] border-[#D4AF37]/50') : 'bg-[#D4AF37]/20 text-[#FFF5D1] border-[#D4AF37]/50'} border text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? (userPlan === 'free' ? '🔒 REQUIERE PRO' : '✓ ACCESO LIBRE') : `🔒 ${t.accessControl}`}
                 </span>
               </div>
 
@@ -404,8 +417,8 @@ export default function Home() {
               <div className={`flex flex-col items-center flex-1 transition-opacity duration-300 w-full ${expandedCard === 'plant' ? 'opacity-100 delay-100 block' : 'opacity-0 hidden'}`}>
                 <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
                 <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-                <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto">
-                  {user ? 'Entrar a Control →' : 'Inicia sesión \u2191'}
+              <div className={`${userPlan === 'free' ? 'text-red-400' : 'text-[#D4AF37]'} font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto`}>
+                {user ? (userPlan === 'free' ? 'Desbloquear Plan Pro \u2192' : 'Entrar a Control \u2192') : 'Inicia sesión \u2191'}
                 </div>
               </div>
             </div>
@@ -439,12 +452,16 @@ export default function Home() {
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaExpert}</h3>
               <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaExpertDesc}</p>
               <div className="text-[#0D9488] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
-                {user ? 'Entrar al Chat →' : 'Inicia sesión arriba \u2191'}
+                {user ? 'Entrar al Chat \u2192' : 'Inicia sesión arriba \u2191'}
               </div>
             </div>
             
             <div 
               onClick={() => {
+                if (userPlan === 'free') {
+                  router.push('/planes');
+                  return;
+                }
                 if (user) {
                   router.push('/planta');
                 } else {
@@ -455,8 +472,8 @@ export default function Home() {
               className={`group rounded-3xl bg-black/40 backdrop-blur-sm border ${user ? 'border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.2)]' : 'border-white/10'} p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:border-[#D4AF37]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-[320px] shrink-0`}
             >
               <div className="absolute top-0 right-0 p-3">
-                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                <span className={`${user ? (userPlan === 'free' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-[#D4AF37]/50 text-[#FFF5D1] border-[#D4AF37]/50') : 'bg-[#D4AF37]/20 text-[#FFF5D1] border-[#D4AF37]/50'} border text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? (userPlan === 'free' ? '🔒 REQUIERE PRO' : '✓ ACCESO LIBRE') : `🔒 ${t.accessControl}`}
                 </span>
               </div>
               <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#D4AF37]/20 transition-all">
@@ -470,8 +487,8 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
               <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-              <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
-                {user ? 'Entrar a Control →' : 'Inicia sesión arriba \u2191'}
+              <div className={`${userPlan === 'free' ? 'text-red-400' : 'text-[#D4AF37]'} font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto`}>
+                {user ? (userPlan === 'free' ? 'Desbloquear Plan Pro \u2192' : 'Entrar a Control \u2192') : 'Inicia sesión \u2191'}
               </div>
             </div>
           </div>
