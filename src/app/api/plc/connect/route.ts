@@ -133,17 +133,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { brand, ip, port, rack, slot, isCloud, ioTags, connectOnly } = body;
 
-    if (!ip) {
-      await supabase.from('plc_errors').insert([{
-        user_id: body.user_id || null, plc_id: body.plc_id || null,
-        equip: brand || 'Desconocido', code: 'ERR-NOIP',
-        desc: 'Falta la dirección IP del PLC', severity: 'Crítico', resolved: false
-      }]);
-      return NextResponse.json({ success: false, error: 'Falta la dirección IP del PLC' }, { status: 400 });
-    }
+      if (!ip) {
+        await supabase.from('plc_errors').insert([{
+          user_id: body.user_id || null, plc_id: body.plc_id || null,
+          equip: brand || 'Desconocido', code: 'ERR-NOIP',
+          desc: 'Falta la dirección IP del PLC', severity: 'Crítico', resolved: false
+        }]);
+        return NextResponse.json({ success: false, error: 'Falta la dirección IP del PLC' }, { status: 400 });
+      }
 
-    // =====================================================================
-    // SIEMENS (S7) — Conexión persistente via pool
+      // --- VALIDACIÓN DE PROTECCIÓN SSRF PARA IPs ---
+      const allowedIPs = process.env.ALLOWED_PLC_IPS ? process.env.ALLOWED_PLC_IPS.split(',') : [];
+      const isPrivateIP = /^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\.|^192\.168\./.test(ip || '');
+      const isLocalhost = /^127\.|^::1$/.test(ip || '') || ip === 'localhost';      
+
+      if (!isPrivateIP && !isLocalhost && !allowedIPs.includes(ip)) {
+        return NextResponse.json({ success: false, error: 'Conexión a IP no permitida por seguridad' }, { status: 403 });
+      }
+      // ----------------------------------------------
     // =====================================================================
     if (brand.toLowerCase().includes('siemens') || brand.toLowerCase() === 's7') {
       const plcPort = port ? parseInt(port, 10) : 102;

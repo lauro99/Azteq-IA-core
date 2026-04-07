@@ -14,6 +14,15 @@ const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
 export async function POST(request: Request) {
   try {
+    // Verificar token del administrador
+    const authHeader = request.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    const correctToken = process.env.ADMIN_SECRET_KEY || 'azteq-super-secret-123';
+    
+    if (token !== correctToken) {
+      return NextResponse.json({ error: 'No autorizado. Token de administrador inválido' }, { status: 401 });
+    }
+
     const body = await request.json();
     let text = body.text;
     const { image } = body;

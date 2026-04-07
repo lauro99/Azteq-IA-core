@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 export default function AdminPage() {
+  const [adminToken, setAdminToken] = useState('');
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -42,11 +43,11 @@ export default function AdminPage() {
     setStatus('Procesando con OpenAI y guardando en Supabase...');
     
     try {
-      const payload = { text, image: imagePreview };
+      const payload = { text, image: imagePreview, adminToken };
 
       const res = await fetch('/api/ingest', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
         body: JSON.stringify(payload)
       });
       
@@ -95,7 +96,15 @@ export default function AdminPage() {
            <h1 className="text-2xl font-bold tracking-wide text-[#E0F2F1]">Panel Administrativo de IA</h1>
         </div>
         <p className="text-xs text-white/60 mb-6 font-light uppercase tracking-wider">Pega aquí el texto de tus manuales técnicos para que la IA los memorice.</p>
-        
+
+        <input
+          type="password"
+          placeholder="Clave de Administrador"
+          value={adminToken}
+          onChange={(e) => setAdminToken(e.target.value)}
+          className="w-full text-sm font-mono tracking-wider bg-black/80 border border-[#0D9488]/50 p-4 rounded-xl text-[#0D9488] focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all mb-4 placeholder-[#0D9488]/30 shadow-inner"
+        />
+
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
