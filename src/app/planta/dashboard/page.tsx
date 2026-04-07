@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLanguage } from '@/components/LanguageContext';
-
-
+import RestrictedAccess from '@/components/RestrictedAccess';
 
 export default function PlantDashboard() {
   const router = useRouter();
   const { t } = useLanguage();
+  const [isLocked, setIsLocked] = useState(false);
   // Estado para mostrar/ocultar variables por PLC
   const [showVars, setShowVars] = useState<Record<string, boolean>>({});
   // Estado para userId
   const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{email?: string, plan?: string}>({});
     // Grupos/Lineas de producción
     const [groups, setGroups] = useState<any[]>([]);
     const [groupName, setGroupName] = useState('');
@@ -29,10 +30,10 @@ export default function PlantDashboard() {
           router.push('/');
           return;
         }
-        setUserId(session.user.id);
+        
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('plan')
+          .select('plan, support_validated')
           .eq('id', session.user.id)
           .single();
           
@@ -40,6 +41,15 @@ export default function PlantDashboard() {
           router.push('/planes');
           return;
         }
+
+        setUserProfile({ email: session.user.email || '', plan: profile?.plan || '' });
+        
+        if (profile?.support_validated === false) {
+          setIsLocked(true);
+          return;
+        }
+
+        setUserId(session.user.id);
       };
       checkUser();
     }, [router]);
@@ -258,6 +268,10 @@ export default function PlantDashboard() {
         <div className="w-8 h-8 rounded-full bg-[#E8C673] animate-pulse"></div>
       </div>
     );
+  }
+
+  if (isLocked) {
+    return <RestrictedAccess userEmail={userProfile?.email} userPlan={userProfile?.plan} />;
   }
 
   return (

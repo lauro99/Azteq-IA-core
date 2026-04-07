@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/components/LanguageContext';
 import LanguageSelector from '@/components/LanguageSelector';
+import RestrictedAccess from '@/components/RestrictedAccess';
 
 const plcBrands = [
   { id: 'siemens', name: 'Siemens', color: 'from-teal-600 to-teal-400', icon: 'S' },
@@ -18,6 +19,9 @@ export default function PlantaBrandSelection() {
   const router = useRouter();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+
+  const [userProfile, setUserProfile] = useState<{email: string, plan: string} | null>(null);
 
   // Verificar que el usuario tenga sesión y plan pro/enterprise antes de dejarlo ver esta pantalla
   useEffect(() => {
@@ -28,15 +32,23 @@ export default function PlantaBrandSelection() {
         return;
       }
       
-      // Verificar el plan
+      // Verificar el plan y la validación de soporte
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('plan')
+        .select('plan, support_validated')
         .eq('id', session.user.id)
         .single();
         
       if (profile?.plan === 'free') {
         router.push('/planes');
+        return;
+      }
+
+      setUserProfile({ email: session.user.email || '', plan: profile?.plan || '' });
+
+      if (profile?.support_validated === false) {
+        setIsLocked(true);
+        setLoading(false);
         return;
       }
       
@@ -51,6 +63,10 @@ export default function PlantaBrandSelection() {
         <div className="w-8 h-8 rounded-full bg-[#D4AF37] animate-pulse"></div>
       </div>
     );
+  }
+
+  if (isLocked) {
+    return <RestrictedAccess userEmail={userProfile?.email} userPlan={userProfile?.plan} />;
   }
 
   return (

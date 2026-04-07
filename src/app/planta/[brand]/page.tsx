@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useLanguage } from '@/components/LanguageContext';
+import RestrictedAccess from '@/components/RestrictedAccess';
 
 const brandData: Record<string, {name: string, color: string}> = {
   siemens: { name: 'Siemens', color: 'text-teal-400' },
@@ -28,6 +29,7 @@ function PlcDashboardContent() {
   // Validación de administrador y usuario actual
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isLocked, setIsLocked] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -74,12 +76,19 @@ function PlcDashboardContent() {
       }
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('plan')
+        .select('plan, support_validated')
         .eq('id', session.user.id)
         .single();
         
       if (profile?.plan === 'free') {
         router.push('/planes');
+        return;
+      }
+
+      setUser({ ...session.user, plan: profile?.plan });
+
+      if (profile?.support_validated === false) {
+        setIsLocked(true);
         return;
       }
     };
@@ -328,6 +337,10 @@ function PlcDashboardContent() {
         <div className="w-8 h-8 rounded-full bg-[#D4AF37] animate-pulse"></div>
       </div>
     );
+  }
+
+  if (isLocked) {
+    return <RestrictedAccess userEmail={user?.email} userPlan={user?.plan} />;
   }
 
   const handleChatSend = async () => {
