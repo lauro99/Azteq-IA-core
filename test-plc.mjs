@@ -1,7 +1,7 @@
 // Test directo de nodes7 — ejecutar con: node test-plc.mjs
 import nodes7 from 'nodes7';
 
-const IP   = '192.168.0.1';
+const IP   = '192.168.0.100';
 const PORT = 102;
 const RACK = 0;
 const SLOT = 1;

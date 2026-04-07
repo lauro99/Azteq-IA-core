@@ -242,7 +242,7 @@ function PlcDashboardContent() {
     if (isConnected) {
       if (connectionMode === 'cloud') {
         // --- ☁️ MODO NUBE (VERCEL) CON SUPABASE REALTIME ---
-        const plcTargetId = selectedPlcId || 'plc-siemens-local-01'; // Fallback a tu id de prueba
+        const plcTargetId = selectedPlcId || 'bb34bcc6-9cd7-47f6-935e-eae22cba04e1'; 
 
         // Obtener estado inicial (para no esperar a que cambie)
         const fetchInitial = async () => {
@@ -374,7 +374,7 @@ function PlcDashboardContent() {
     
     try {
       if (connectionMode === 'cloud') {
-        const plcTargetId = selectedPlcId || 'plc-siemens-local-01'; // Fallback a tu id de prueba
+        const plcTargetId = selectedPlcId || 'bb34bcc6-9cd7-47f6-935e-eae22cba04e1'; // Fallback a tu id de .env.local
 
         // Comprobar si existe el dato en la nube antes de autorizar el cambio de pantalla
         const { data, error } = await supabase.from('plc_realtime').select('*').eq('plc_id', plcTargetId).single();
@@ -985,28 +985,38 @@ function PlcDashboardContent() {
                 </>
               ) : (
                 <>
-                  {/* Cuadro de Sensor 1 */}
+                  {/* GENERACIÓN AUTOMÁTICA DE VISTAS SEGÚN LO QUE LLEGUE DEL GATEWAY */}
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plCpuTemp}</span>
-                    <span className="text-3xl font-black text-white">{plcData?.temperaturaCpu ?? '--'}<span className="text-lg text-white/40">°C</span></span>     
-                  </div>
-                  {/* Cuadro de Sensor 2 */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plSystemPressure}</span>
-                    <span className="text-3xl font-black text-white">{plcData?.presionSistema ?? '--'}<span className="text-lg text-white/40">bar</span></span>     
-                  </div>
-                  {/* Cuadro de Sensor 3 */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plGeneralStatus}</span>
-                    <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral === 'OPERATIVO' ? 'text-green-400' : 'text-red-400'}`}>
-                      {plcData?.estatusGeneral ?? '--'}
+                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plConnectionStatus}</span>
+                    <span className={`text-lg font-black mt-2 shadow-sm drop-shadow-lg ${plcData?.estatusGeneral?.includes('OPERATIVO') ? 'text-green-400' : 'text-red-400'}`}>
+                      {plcData?.estatusGeneral ?? 'No Conectado'}
                     </span>
                   </div>
-                  {/* Cuadro de Sensor 4 */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                    <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{t.plCyclesPerHour}</span>
-                    <span className="text-3xl font-black text-white">{plcData?.ciclosPorHora?.toLocaleString() ?? '--'}</span>
-                  </div>
+                  
+                  {plcData && Object.keys(plcData).filter(p => !['estatusGeneral', 'estatusgeneral', 'updated_at', 'plc_id', 'variables'].includes(p)).length > 0 ? (
+                    Object.entries(plcData)
+                      .filter(([key]) => !['estatusGeneral', 'estatusgeneral', 'updated_at', 'plc_id', 'variables'].includes(key))
+                      .map(([key, value]) => (
+                        <div key={key} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                          <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-3xl font-black text-white">
+                            {typeof value === 'boolean' 
+                              ? <span className={value ? "text-green-500" : "text-red-500"}>{value ? 'ON' : 'OFF'}</span> 
+                              : String(value)}
+                          </span>
+                        </div>
+                      ))
+                  ) : (
+                    <>
+                      {/* Cuadro de Muestra si no hay data */}
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                        <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">Aviso</span>
+                        <span className="text-sm font-black text-white/50 mt-2 text-balance leading-relaxed">
+                          Esperando datos o falta Mapeo de E/S
+                        </span>     
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               {/* Mensaje Largo */}
