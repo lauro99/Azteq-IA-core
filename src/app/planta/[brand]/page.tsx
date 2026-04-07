@@ -237,45 +237,90 @@ function PlcDashboardContent() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     let isFetching = false;
+    let channel: any;
 
     if (isConnected) {
-      interval = setInterval(async () => {
-        if (isFetching) return;
-        isFetching = true;
-        try {
-          const res = await fetch('/api/plc/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              brand: brandId,
-              ip: ipAddress,
-              port,
-              rack: Number(rack),
-              slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
-              isCloud: connectionMode === 'cloud',
-              connectOnly: ioTags.length === 0,
-              ioTags
-            })
-          });
-          const data = await res.json();
-          if (data.success) {
-            setPlcData(data.data);
-            setPlcWarning(data.warning || null);
-          } else {
-            console.error('Polling error:', data.error);
+      if (connectionMode === 'cloud') {
+        // --- ☁️ MODO NUBE (VERCEL) CON SUPABASE REALTIME ---
+        const plcTargetId = selectedPlcId || 'plc-siemens-local-01'; // Fallback a tu id de prueba
+
+        // Obtener estado inicial (para no esperar a que cambie)
+        const fetchInitial = async () => {
+          const { data } = await supabase.from('plc_realtime').select('*').eq('plc_id', plcTargetId).single();
+          if (data) {
+            setPlcData({ ...data.data, estatusGeneral: data.estatusgeneral });
           }
-        } catch (error) {
-          console.error('Polling network error:', error);
-        } finally {
-          isFetching = false;
-        }
-      }, 3000); // 3 segundos (refresco en tiempo real)
+        };
+        fetchInitial();
+
+        // Suscribirse a los web sockets de Supabase
+        channel = supabase.channel(`realtime_${plcTargetId}`)
+          .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'plc_realtime', 
+            filter: `plc_id=eq.${plcTargetId}` 
+          }, (payload) => {
+            const newData = payload.new as any;
+            if (newData) {
+              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
+            }
+          })
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'plc_realtime', 
+            filter: `plc_id=eq.${plcTargetId}` 
+          }, (payload) => {
+            const newData = payload.new as any;
+            if (newData) {
+              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
+            }
+          })
+          .subscribe();
+
+      } else {
+        // --- 🏭 MODO LOCAL ORIGINAL (Cable directo / Polling) ---
+        interval = setInterval(async () => {
+          if (isFetching) return;
+          isFetching = true;
+          try {
+            const res = await fetch('/api/plc/connect', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                brand: brandId,
+                ip: ipAddress,
+                port,
+                rack: Number(rack),
+                slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
+                isCloud: connectionMode === 'cloud',
+                connectOnly: ioTags.length === 0,
+                ioTags
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              setPlcData(data.data);
+              setPlcWarning(data.warning || null);
+            } else {
+              console.error('Polling error:', data.error);
+            }
+          } catch (error) {
+            console.error('Polling network error:', error);
+          } finally {
+            isFetching = false;
+          }
+        }, 3000); // 3 segundos
+      }
     }
+    
     return () => {
       if (interval) clearInterval(interval);
+      if (channel) supabase.removeChannel(channel);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags]);
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags, selectedPlcId]);
 
   if (loading) {
     return (
@@ -328,31 +373,51 @@ function PlcDashboardContent() {
     setIsConnecting(true);
     
     try {
-      const res = await fetch('/api/plc/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brand: brandId,
-          ip: ipAddress,
-          port,
-          rack: Number(rack),
-          slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
-          isCloud: connectionMode === 'cloud',
-          connectOnly: ioTags.length === 0,
-          ioTags
-        })
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setPlcData(data.data);
-        setPlcWarning(data.warning || null);
+      if (connectionMode === 'cloud') {
+        const plcTargetId = selectedPlcId || 'plc-siemens-local-01'; // Fallback a tu id de prueba
+
+        // Comprobar si existe el dato en la nube antes de autorizar el cambio de pantalla
+        const { data, error } = await supabase.from('plc_realtime').select('*').eq('plc_id', plcTargetId).single();
+
+        if (error || !data) {
+           showToast('No se encontraron métricas en vivo (Asegúrate de que el Gateway esté encendido en planta).', 'error');
+           setIsConnecting(false);
+           return;
+        }
+
+        // Si conecta exitosamente, configuramos el estado
+        setPlcData({ ...data.data, estatusGeneral: data.estatusgeneral });
+        setPlcWarning(null);
         setIsConnected(true);
+
       } else {
-        showToast(data.error || 'Error conectando al PLC', 'error');
+        // --- 🏭 MODO LOCAL (Cable directo) ---
+        const res = await fetch('/api/plc/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brand: brandId,
+            ip: ipAddress,
+            port,
+            rack: Number(rack),
+            slot: Number(brandId === 'siemens' && ['s7-1200','s7-1500','logo'].includes(plcModel) ? '0' : slot),
+            isCloud: connectionMode === 'cloud',
+            connectOnly: ioTags.length === 0,
+            ioTags
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          setPlcData(data.data);
+          setPlcWarning(data.warning || null);
+          setIsConnected(true);
+        } else {
+          showToast(data.error || 'Error conectando al PLC', 'error');
+        }
       }
     } catch (error) {
-      showToast('Error de red contactando al servidor', 'error');
+      showToast('Error de red contactando al servidor o base de datos', 'error');
     } finally {
       setIsConnecting(false);
     }
@@ -397,7 +462,7 @@ function PlcDashboardContent() {
                     <li><strong>¿Qué estamos leyendo?:</strong> Pon el nombre específico de lo que detecta el sensor. <strong>Regla de oro: No uses espacios</strong> (usa guiones bajos `_`). Ejemplo: <em>Temperatura_Agua</em>.</li>
                     <li><strong>Dirección del PLC:</strong> Aquí pones la ubicación exacta en el autómata. Si tienes dudas, revisa el manual del fabricante.
                       <ul className="pl-4 mt-1 text-gray-400 text-xs list-[circle]">
-                        <li><strong className="text-white">Siemens:</strong> Marcas (ej. M0.0), Entradas/Salidas (ej. I0.0 / Q0.1) o Data Blocks (ej. DB1,X0.0).</li>
+                        <li><strong className="text-white">Siemens:</strong> Marcas (ej. M0.0), Entradas/Salidas (ej. I0.0 / Q0.1) o Data Blocks (ej. DB1,X0.0). <br/><em>💡 Tip Contadores: </em> Engancha la salida "CV" del contador a una Memoria (ej. MW10) y escribe aquí "MW10" con tipo "Entero".</li>
                         <li><strong className="text-white">Allen-Bradley:</strong> El nombre de la etiqueta (Tag) directo (ej. Motor_Activo).</li>
                         <li><strong className="text-white">Modbus (Delta/Keyence):</strong> Usa los registros clásicos (ej. 40001, 40002).</li>
                       </ul>
