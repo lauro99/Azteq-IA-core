@@ -145,6 +145,9 @@ export default function ChatClient() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userEmail = session?.user?.email || '';
+      
+      // Intentar obtener el username de los metadatos o generarlo a partir del email
+      const userName = session?.user?.user_metadata?.username || userEmail.split('@')[0] || 'Operador';
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -152,6 +155,7 @@ export default function ChatClient() {
         body: JSON.stringify({ 
           message: userMsg, 
           userEmail, 
+          userName, // Enviamos el nombre del usuario
           image: imageBase64,
           history: currentMessages.slice(-8), // Enviamos solo los últimos 8 mensajes para no saturar el token limit
           chatId: currentChatId // Enviamos el ID del chat para que lo guarde en DB

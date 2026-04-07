@@ -185,6 +185,11 @@ export default function Home() {
                     Registrarse
                   </button>
                 </div>
+                <div className="w-full text-center mt-2">
+                  <Link href="/recuperar" className="text-white/40 hover:text-[#0D9488] text-[10px] uppercase font-bold tracking-widest transition-colors">
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
               </div>
               {errorMsg && <p className="text-red-400 text-[10px] uppercase font-bold tracking-widest">{errorMsg}</p>}
             </>

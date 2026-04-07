@@ -1,64 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
-export default function RegistroPage() {
-  const router = useRouter();
+export default function RecuperarPage() {
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     
-    if (!email || !username || !password) {
-      setMessage('Por favor llena todos los campos.');
-      setIsError(true);
-      return;
-    }
-
-    // Validaciones de contraseña
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-
-    if (password.length < 6 || !hasUpperCase || !hasSpecialChar || !hasNumber) {
-      setMessage('La contraseña debe tener al menos 6 caracteres (incluyendo números), 1 mayúscula y 1 símbolo especial (#$%&).');
+    if (!email) {
+      setMessage('Por favor ingresa tu correo electrónico.');
       setIsError(true);
       return;
     }
     
     setIsLoading(true);
     
-    // Si no incluye arroba, usamos el dominio base como en el login
+    // Si no incluye arroba, usamos el dominio base
     const emailToUse = email.includes('@') ? email : `${email}@azteq.com`;
 
-    const { error } = await supabase.auth.signUp({
-      email: emailToUse,
-      password,
-      options: {
-        data: {
-          username: username,
-        }
-      }
+    // Solicitar a Supabase que envíe un correo de recuperación
+    const { error } = await supabase.auth.resetPasswordForEmail(emailToUse, {
+      // Esta URL debe apuntar a la página donde vas a procesar el cambio de clave real
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     
+    setIsLoading(false);
+    
     if (error) {
-      setMessage(error.message || 'Error al registrarte. Intenta de nuevo.');
+      setMessage(error.message || 'Error al solicitar el restablecimiento.');
       setIsError(true);
-      setIsLoading(false);
     } else {
-      setMessage('Redirigiendo al sistema...');
+      setMessage('Te hemos enviado un enlace para restablecer tu contraseña. Revisa tu correo.');
       setIsError(false);
-      // Supabase por defecto inicia sesión automáticamente si no requiere confirmación de email
-      router.push('/');
     }
   };
 
@@ -71,27 +51,18 @@ export default function RegistroPage() {
           
           <div className="w-12 h-12 mb-4 rounded-full bg-[#0D9488]/20 flex items-center justify-center shadow-[0_0_15px_#0D9488]">
             <svg className="w-6 h-6 text-[#0D9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
           
-          <h1 className="text-xl font-bold text-white mb-8 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] text-center uppercase">
-            Registro de Operador
+          <h1 className="text-xl font-bold text-white mb-2 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] text-center uppercase">
+            Recuperar Acceso
           </h1>
+          <p className="text-white/50 text-[10px] uppercase text-center mb-8 px-2">
+            Ingresa tu correo y te enviaremos un enlace seguro para que puedas cambiar tu contraseña.
+          </p>
           
-          <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Nombre de Operador</label>
-              <input
-                type="text"
-                placeholder="Ej. Juan Perez"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isLoading}
-                className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488]/50 focus:bg-white/10 transition-all font-light w-full"
-              />
-            </div>
-
+          <form onSubmit={handleResetPassword} className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Correo electrónico</label>
               <input
@@ -99,18 +70,6 @@ export default function RegistroPage() {
                 placeholder="operador@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full"
-              />
-            </div>
-            
-            <div className="flex flex-col gap-1">
-              <label className="text-white/60 text-[10px] uppercase font-bold tracking-widest ml-1">Contraseña</label>
-              <input
-                type="password"
-                placeholder="6 caracteres, 1 número, 1 mayú, 1 símbolo"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full"
               />
@@ -127,7 +86,7 @@ export default function RegistroPage() {
               disabled={isLoading}
               className="mt-4 bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 text-black px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 w-full shadow-[0_4px_15px_rgba(212,175,55,0.3)]"
             >
-              {isLoading ? 'Registrando...' : 'Registrar'}
+              {isLoading ? 'Enviando...' : 'Enviar enlace'}
             </button>
           </form>
 

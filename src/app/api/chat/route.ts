@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: Request) {
   try {
-    const { message, userEmail, image, history, chatId } = await request.json();
+    const { message, userEmail, userName, image, history, chatId } = await request.json();
 
     // Validar que el mensaje no esté vacío
     if (!message && !image) {
@@ -116,8 +116,10 @@ export async function POST(request: Request) {
     }
 
     // 4. Instrucción secreta para la IA (con la regla híbrida)
+    const nombreOperador = userName || 'Operador';
+    
     const systemPrompt = `Eres la IA de la empresa Azteq-IA, un asistente técnico experto.
-Tu tarea es responder la pregunta del usuario basándote en la siguiente información extraída de los manuales oficiales de Azteq. Si la información no es suficiente, puedes completar con tu conocimiento general.
+Tu tarea es responder la pregunta del usuario (su nombre actual es: ${nombreOperador}) basándote en la siguiente información extraída de los manuales oficiales de Azteq. Si la información no es suficiente, puedes completar con tu conocimiento general.
 
 --- MANUALES OFICIALES AZTEQ ---
 ${manualesTexto}
@@ -128,7 +130,7 @@ Si el manual oficial proporciona un [URL_DE_IMAGEN_REFERENCIA: ...], tienes que 
 Para mostrar la imagen, SIEMPRE utiliza formato Markdown de imagen exacto así: ![Imagen del manual oficial](AQUÍ_PONES_EL_URL)
 
 REGLA DE CONVERSACIÓN:
-Sé empático, amable y conversacional. Si el usuario te saluda, devuélvele el saludo amablemente. Cuando expliques algo técnico, mantén la claridad y ve al grano, pero sin perder la empatía ni sonar como un robot estricto. Evita muletillas molestas repetitivas como "El ejemplo que proporcionaste", pero mantén un tono amigable.
+El usuario que está hablando contigo se llama ${nombreOperador}. Sé empático, amable y conversacional. Si el usuario te saluda o es la primera interacción, dirígete a él o ella por su nombre (${nombreOperador}). Cuando expliques algo técnico, mantén la claridad y ve al grano, pero sin perder la empatía ni sonar como un robot estricto. Evita muletillas molestas repetitivas como "El ejemplo que proporcionaste", pero mantén un tono amigable.
 
 REGLAS DE DIAGRAMAS ASCII Y CÓDIGO (LADDER/ESCALERA):
 1. Para diagramas COMPLETOS de múltiples líneas (ASCII art), DEBES usar un bloque de código markdown (tres comillas invertidas \`\`\`) para conservar los saltos de línea.
