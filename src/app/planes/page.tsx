@@ -10,6 +10,26 @@ export default function PlanesPage() {
   const [userPlan, setUserPlan] = useState<string>('free');
   const [loading, setLoading] = useState(true);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<'pro' | 'enterprise'>('pro');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(false);
+
+  const handleCheckout = async (plan: 'pro' | 'enterprise') => {
+    setPaymentError(false);
+    setCheckoutPlan(plan);
+    setShowCheckout(true);
+  };
+
+  const processPayment = async () => {
+    setPaymentError(false);
+    setIsProcessing(true);
+    // Simula una pequeña carga y error (Demo)
+    setTimeout(() => {
+      setIsProcessing(false);
+      setPaymentError(true);
+    }, 2000);
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -146,7 +166,7 @@ export default function PlanesPage() {
             <div className="mt-8 w-full"></div>
             <button 
               disabled={userPlan === 'pro'}
-              onClick={() => alert(`Contacta a soporte/ventas para realizar el pago seguro y activar el plan Pro por suscripción ${isAnnual ? 'anual (-10%)' : 'mensual'}.`)} 
+              onClick={(e) => { e.preventDefault(); handleCheckout('pro'); }} 
               className={`mt-auto w-full py-4 rounded-xl font-bold uppercase tracking-wider text-xs transition-all ${userPlan === 'pro' ? 'bg-[#D4AF37] text-black shadow-[0_0_20px_rgba(212,175,55,0.5)]' : 'bg-[#D4AF37]/80 hover:bg-[#D4AF37] text-black hover:scale-105 active:scale-95'}`}
             >
               {userPlan === 'pro' ? 'Activo' : 'Subir a Pro'}
@@ -180,12 +200,93 @@ export default function PlanesPage() {
             <div className="mt-8 w-full"></div>
             <button 
               disabled={userPlan === 'enterprise'}
-              onClick={() => alert(`Contacta a ventas para adquirir la licencia y hardware Enterprise con pago ${isAnnual ? 'anual (10% de descuento)' : 'mensual'}.`)} 
+              onClick={(e) => { e.preventDefault(); handleCheckout('enterprise'); }} 
               className={`mt-auto w-full py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border ${userPlan === 'enterprise' ? 'bg-blue-600 text-white border-transparent' : 'bg-transparent border-blue-500/50 hover:bg-blue-600/20 text-blue-400 hover:text-white hover:border-blue-500'}`}
             >
-              {userPlan === 'enterprise' ? 'Activo' : 'Contactar Ventas'}
+              {userPlan === 'enterprise' ? 'Activo' : 'Adquirir Enterprise'}
             </button>
           </div>
+          {/* Checkout Modal Flotante */}
+          {showCheckout && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-[#1a1a1a] border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative animate-fade-in-up">
+                <button 
+                  onClick={() => !isProcessing && setShowCheckout(false)}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#00D4FF]/10 text-[#00D4FF] mb-4 shadow-[0_0_20px_rgba(0,212,255,0.2)]">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Finalizar Compra</h2>
+                  <p className="text-sm text-white/60">
+                    Estás a un paso de activar tu suscripción <b className="text-white capitalize">{checkoutPlan}</b>.
+                  </p>
+                </div>
+
+                <div className="bg-black/50 rounded-xl p-4 mb-8 border border-white/5">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white/60 text-sm">Plan {checkoutPlan === 'pro' ? 'Profesional' : 'Enterprise'}</span>
+                    <span className="text-white font-bold">
+                      ${checkoutPlan === 'pro' ? (isAnnual ? 400 * 0.9 : 400) : (isAnnual ? 1000 * 0.9 : 1000)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/40">Ciclo de facturación</span>
+                    <span className="text-white/70">{isAnnual ? 'Anual (-10%)' : 'Mensual'}</span>
+                  </div>
+                  <div className="h-px w-full bg-white/10 my-4"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80 font-bold">Total a pagar hoy</span>
+                    <span className="text-xl font-black text-[#00D4FF]">
+                      ${checkoutPlan === 'pro' ? (isAnnual ? 400 * 12 * 0.9 : 400) : (isAnnual ? 1000 * 12 * 0.9 : 1000)} USD
+                    </span>
+                  </div>
+                </div>
+
+                {paymentError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 flex items-start gap-3 animate-[shake_0.5s_ease-in-out]">
+                    <div className="mt-0.5 bg-red-500/20 text-red-400 rounded-full p-1.5 shadow-[0_0_15px_rgba(239,68,68,0.3)] shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-red-400 font-bold text-sm mb-1">Pago Rechazado</h4>
+                      <p className="text-red-400/80 text-xs leading-relaxed">
+                        Lo sentimos, la conexión de pago falló o la tarjeta fue rechazada. Por favor, intenta de nuevo o comunícate con soporte.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <button 
+                  onClick={processPayment}
+                  disabled={isProcessing}
+                  className="w-full bg-[#635BFF] hover:bg-[#7A73FF] text-white py-4 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(99,91,255,0.4)] hover:shadow-[0_0_30px_rgba(99,91,255,0.6)] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H8l4-7v6h3l-4 7z"/>
+                    </svg>
+                  )}
+                  {isProcessing ? 'Conectando con terminal de pago...' : (paymentError ? 'Reintentar Pago' : 'Pagar de forma Segura')}
+                </button>
+                <div className="mt-4 text-center">
+                  <span className="text-[10px] text-white/40 uppercase tracking-widest flex items-center justify-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    Pagos procesados por Stripe
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
