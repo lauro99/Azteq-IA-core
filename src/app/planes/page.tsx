@@ -76,10 +76,10 @@ export default function PlanesPage() {
           className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          <span>Volver</span>
+          <span>{t.backBtn || 'Volver'}</span>
         </button>
         <span className="font-bold text-sm tracking-widest uppercase text-indigo-400">
-          Suscripciones
+          {t.subscriptions || 'Suscripciones'}
         </span>
       </header>
 

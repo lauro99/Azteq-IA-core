@@ -101,7 +101,7 @@ export default function Home() {
             <button 
               onClick={() => setShowInfo(true)}
               className="group flex flex-row items-center gap-2 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 rounded-xl transition-all backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
-              title="¿Qué hace cada IA?"
+              title={(t as any)?.infoTooltip || '¿Qué hace cada IA?'}
             >
               <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -530,22 +530,22 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaExpert || 'IA Experta'}</h3>
-                  <p className="text-[#0D9488] text-xs font-bold tracking-widest uppercase">Asistente Técnico (RAG)</p>
+                  <p className="text-[#0D9488] text-xs font-bold tracking-widest uppercase">{(t as any)?.iaExpertSubtitle || 'Asistente Técnico (RAG)'}</p>
                 </div>
               </div>
               
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Zero Alucinaciones:</strong> Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat1 || 'Zero Alucinaciones:'}</strong> {(t as any)?.iaExpertFeat1Desc || 'Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Dispara tu OEE (Downtime Killer):</strong> Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat2 || 'Dispara tu OEE (Downtime Killer):'}</strong> {(t as any)?.iaExpertFeat2Desc || 'Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Experto Matemático Integrado:</strong> Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat3 || 'Experto Matemático Integrado:'}</strong> {(t as any)?.iaExpertFeat3Desc || 'Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.'}</span>
                 </li>
               </ul>
             </div>
@@ -566,22 +566,22 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaPlant || 'IA Planta'}</h3>
-                  <p className="text-[#D4AF37] text-xs font-bold tracking-widest uppercase">Monitoreo IoT & Gemelo Digital</p>
+                  <p className="text-[#D4AF37] text-xs font-bold tracking-widest uppercase">{(t as any)?.iaPlantSubtitle || 'Monitoreo IoT & Gemelo Digital'}</p>
                 </div>
               </div>
 
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Conecta con Cualquier PLC:</strong> Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat1 || 'Conecta con Cualquier PLC:'}</strong> {(t as any)?.iaPlantFeat1Desc || 'Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Crece a tu Ritmo:</strong> Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat2 || 'Crece a tu Ritmo:'}</strong> {(t as any)?.iaPlantFeat2Desc || 'Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Tu Planta en tu Bolsillo:</strong> Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat3 || 'Tu Planta en tu Bolsillo:'}</strong> {(t as any)?.iaPlantFeat3Desc || 'Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.'}</span>
                 </li>
               </ul>
             </div>

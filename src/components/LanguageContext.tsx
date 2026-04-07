@@ -66,9 +66,28 @@ const dictionary = {
     inDevelopment: "En desarrollo...",
     footer: "© 2026 Azteq-IA. Sistema Operacional de Nueva Generación.",
     
+    // INFO MODAL
+    infoTooltip: "¿Qué hace cada IA?",
+    iaExpertSubtitle: "Asistente Técnico (RAG)",
+    iaExpertFeat1: "Zero Alucinaciones:",
+    iaExpertFeat1Desc: "Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.",
+    iaExpertFeat2: "Dispara tu OEE (Downtime Killer):",
+    iaExpertFeat2Desc: "Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.",
+    iaExpertFeat3: "Experto Matemático Integrado:",
+    iaExpertFeat3Desc: "Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.",
+    iaPlantSubtitle: "Monitoreo IoT & Gemelo Digital",
+    iaPlantFeat1: "Conecta con Cualquier PLC:",
+    iaPlantFeat1Desc: "Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.",
+    iaPlantFeat2: "Crece a tu Ritmo:",
+    iaPlantFeat2Desc: "Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.",
+    iaPlantFeat3: "Tu Planta en tu Bolsillo:",
+    iaPlantFeat3Desc: "Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.",
+    
     // PLANES
     planesTitle: "Actualiza tu Plan",
     planesDesc: "Selecciona la suscripción que mejor se adapte a tus necesidades. Las actualizaciones se aplican de manera inmediata a tu cuenta.",
+    backBtn: "Volver",
+    subscriptions: "SUSCRIPCIONES",
     monthly: "Facturación Mensual",
     annual: "Facturación Anual",
     save10: "Ahorra 10%",
@@ -103,6 +122,8 @@ const dictionary = {
     placeholder: "Pregunta lo que quieras...",
     send: "Enviar",
     errorCon: "⚠ Fallo al conectar con la API de chat.",
+    noRecentChats: "Sin chats recientes",
+    attachImage: "Adjuntar imagen",
 
     // PLANTA [brand]/page.tsx
     plDisconnect: "Desconectar",
@@ -268,9 +289,28 @@ const dictionary = {
     inDevelopment: "In development...",
     footer: "© 2026 Azteq-IA. Next-Generation Operating System.",
     
+    // INFO MODAL
+    infoTooltip: "What does each AI do?",
+    iaExpertSubtitle: "Technical Assistant (RAG)",
+    iaExpertFeat1: "Zero Hallucinations:",
+    iaExpertFeat1Desc: "100% reliable answers based exclusively on *your* manuals and diagrams (PDF/TXT). Solve your problems safely.",
+    iaExpertFeat2: "Boost your OEE (Downtime Killer):",
+    iaExpertFeat2Desc: "Forget hours searching on paper. Diagnose and resolve complex faults in seconds, increasing your Pure Availability by up to 40%.",
+    iaExpertFeat3: "Integrated Mathematical Expert:",
+    iaExpertFeat3Desc: "Advanced calibration and control engineering calculations solved instantly and accurately.",
+    iaPlantSubtitle: "IoT Monitoring & Digital Twin",
+    iaPlantFeat1: "Connect with any PLC:",
+    iaPlantFeat1Desc: "Native compatibility without paying extra licenses. Link Siemens, Modbus or Allen-Bradley equipment in just a few clicks.",
+    iaPlantFeat2: "Grow at your own pace:",
+    iaPlantFeat2Desc: "From automating a single machine to having a multi-brand fleet in your digital twin. Fits perfectly into your budget.",
+    iaPlantFeat3: "Your plant in your pocket:",
+    iaPlantFeat3Desc: "Live managerial dashboards. Monitor critical KPIs (pressures, bottlenecks) from your phone or tablet anywhere in the world.",
+    
     // PLANES
     planesTitle: "Upgrade your Plan",
     planesDesc: "Select the subscription that best fits your needs. Upgrades are applied immediately to your account.",
+    backBtn: "Back",
+    subscriptions: "SUBSCRIPTIONS",
     monthly: "Monthly Billing",
     annual: "Annual Billing",
     save10: "Save 10%",
@@ -305,6 +345,8 @@ const dictionary = {
     placeholder: "Ask whatever you want...",
     send: "Send",
     errorCon: "⚠ Failed to connect to the chat API.",
+    noRecentChats: "No recent chats",
+    attachImage: "Attach image",
 
     // PLANTA [brand]/page.tsx
     plDisconnect: "Disconnect",
