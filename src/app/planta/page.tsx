@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/components/LanguageContext';
 import LanguageSelector from '@/components/LanguageSelector';
+import RestrictedAccess from '@/components/RestrictedAccess';
 
 const plcBrands = [
   { id: 'siemens', name: 'Siemens', color: 'from-teal-600 to-teal-400', icon: 'S' },
@@ -18,16 +19,40 @@ export default function PlantaBrandSelection() {
   const router = useRouter();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
 
-  // Verificar que el usuario tenga sesión antes de dejarlo ver esta pantalla
+  const [userProfile, setUserProfile] = useState<{email: string, plan: string} | null>(null);
+
+  // Verificar que el usuario tenga sesión y plan pro/enterprise antes de dejarlo ver esta pantalla
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/');
-      } else {
-        setLoading(false);
+        return;
       }
+      
+      // Verificar el plan y la validación de soporte
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('plan, support_validated')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profile?.plan === 'free') {
+        router.push('/planes');
+        return;
+      }
+
+      setUserProfile({ email: session.user.email || '', plan: profile?.plan || '' });
+
+      if (profile?.support_validated === false) {
+        setIsLocked(true);
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(false);
     };
     checkSession();
   }, [router]);
@@ -38,6 +63,10 @@ export default function PlantaBrandSelection() {
         <div className="w-8 h-8 rounded-full bg-[#D4AF37] animate-pulse"></div>
       </div>
     );
+  }
+
+  if (isLocked) {
+    return <RestrictedAccess userEmail={userProfile?.email} userPlan={userProfile?.plan} />;
   }
 
   return (
@@ -52,20 +81,29 @@ export default function PlantaBrandSelection() {
           onClick={() => router.push('/')}
           className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
         >
-          <span>← Volver</span>
+          <span>{t.piBack}</span>
         </button>
         <div className="flex items-center gap-4">
           <LanguageSelector />
           <div className="h-6 w-px bg-white/20"></div>
+          <button
+            onClick={() => router.push('/planes')}
+            className="hidden sm:flex group flex-row items-center justify-center gap-1.5 bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] hover:from-[#1e1b4b] hover:to-[#312e81] border border-indigo-500/30 hover:border-indigo-400/50 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_4px_10px_rgba(79,70,229,0.15)] hover:shadow-[0_4px_15px_rgba(79,70,229,0.3)]"
+          >
+            <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>{(t as any).changePlan || 'Cambiar Plan'}</span>
+          </button>
           <button
             onClick={() => router.push('/planta/ayuda')}
             className="flex items-center gap-1 px-3 py-1 rounded-full border border-[#D4AF37]/60 bg-[#D4AF37]/10 text-[#D4AF37] font-bold text-xs uppercase tracking-widest hover:bg-[#D4AF37]/30 hover:text-black transition-all shadow-sm"
             title="Ver ayuda y documentación de conexión"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 14h.01M16 10h.01M12 18h.01M12 6h.01" /></svg>
-            Ayuda
+            {t.piHelp}
           </button>
-          <span className="text-[#D4AF37] font-bold text-sm tracking-widest uppercase shadow-sm">IA Planta</span>
+          <span className="text-[#D4AF37] font-bold text-sm tracking-widest uppercase shadow-sm">{t.piIaPlanta}</span>
         </div>
       </header>
 
@@ -88,16 +126,16 @@ export default function PlantaBrandSelection() {
           >
             <span className="relative z-10 flex items-center gap-2">
                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-               Abrir Visión Global (Dashboard)
+               {t.piOpenDashboard}
             </span>
             <div className="absolute inset-0 w-full h-full bg-[#D4AF37]/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] z-0"></div>
           </button>
 
           <h1 className="text-3xl md:text-5xl font-bold text-white tracking-widest uppercase mb-4 drop-shadow-md mt-4">
-            Selecciona el PLC
+            {t.piSelectPLC}
           </h1>
           <p className="text-white/60 text-sm md:text-base max-w-lg mx-auto font-light leading-relaxed">
-            Elige la marca del controlador lógico programable al que la IA Planta deberá conectarse y analizar de forma individual.
+            {t.piSelectPLCDesc}
           </p>
         </div>
 
@@ -120,7 +158,7 @@ export default function PlantaBrandSelection() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-wider mb-1">{brand.name}</h3>
-                  <p className="text-white/40 text-xs font-light uppercase tracking-widest">Conexión Industrial</p>
+                  <p className="text-white/40 text-xs font-light uppercase tracking-widest">{t.piIndustrialConnection}</p>
                 </div>
               </div>
 

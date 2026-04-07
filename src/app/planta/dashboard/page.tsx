@@ -4,20 +4,55 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import LanguageSelector from '@/components/LanguageSelector';
-
-
+import { useLanguage } from '@/components/LanguageContext';
+import RestrictedAccess from '@/components/RestrictedAccess';
 
 export default function PlantDashboard() {
+  const router = useRouter();
+  const { t } = useLanguage();
+  const [isLocked, setIsLocked] = useState(false);
   // Estado para mostrar/ocultar variables por PLC
   const [showVars, setShowVars] = useState<Record<string, boolean>>({});
   // Estado para userId
   const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{email?: string, plan?: string}>({});
     // Grupos/Lineas de producción
     const [groups, setGroups] = useState<any[]>([]);
     const [groupName, setGroupName] = useState('');
     const [editingGroup, setEditingGroup] = useState<any>(null);
     const [groupLoading, setGroupLoading] = useState(false);
     const [groupError, setGroupError] = useState<string | null>(null);
+
+    useEffect(() => {
+      const checkUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/');
+          return;
+        }
+        
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('plan, support_validated')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile?.plan === 'free') {
+          router.push('/planes');
+          return;
+        }
+
+        setUserProfile({ email: session.user.email || '', plan: profile?.plan || '' });
+        
+        if (profile?.support_validated === false) {
+          setIsLocked(true);
+          return;
+        }
+
+        setUserId(session.user.id);
+      };
+      checkUser();
+    }, [router]);
 
     // Obtener grupos del usuario
     useEffect(() => {
@@ -70,7 +105,7 @@ export default function PlantDashboard() {
 
     // Eliminar grupo
     const handleDeleteGroup = async (id: string) => {
-      if (!confirm('¿Eliminar este grupo/linea?')) return;
+      if (!confirm(t.dbConfirmDeleteGroup)) return;
       setGroupLoading(true);
       if (userId) {
         const { data } = await supabase.from('plc_groups').select('*').eq('user_id', userId).order('created_at', { ascending: true });
@@ -79,8 +114,8 @@ export default function PlantDashboard() {
       setGroupLoading(false);
     };
 
-  const router = useRouter();
   const [liveData, setLiveData] = useState<Record<string, any>>({});
+  const [plcConnErrors, setPlcConnErrors] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userPLCs, setUserPLCs] = useState<any[]>([]); // Lista real traída de Supabase
@@ -123,9 +158,8 @@ export default function PlantDashboard() {
       const newData: Record<string, any> = {};
       
       const promises = userPLCs.map(async (plc) => {
-        // Obtenemos los valores a través de la misma API que en las vistas individuales, 
-        // pasamos mockMode: true para no romper en caso de no tener PLC conectado físicamente,
-        // pero usaremos el mapeo real de io_config.
+        // Obtenemos los valores a través de la misma API que en las vistas individuales,
+        // usamos el mapeo real de io_config para las máquinas físicas.
         try {
           const res = await fetch('/api/plc/connect', {
             method: 'POST',
@@ -137,13 +171,17 @@ export default function PlantDashboard() {
               rack: Number(plc.rack) || 0,
               slot: Number(plc.slot) || 1,
               isCloud: plc.is_cloud,
-              mockMode: true, // Forzamos simulación visual en el dashboard por ahora
+               // Forzamos simulación visual en el dashboard por ahora
               ioTags: plc.io_config || []
             })
           });
           const data = await res.json();
           if (data.success) {
             newData[plc.id] = data.data;
+            // Limpiar error previo si ahora hay éxito
+            setPlcConnErrors(prev => { const e = {...prev}; delete e[plc.id]; return e; });
+          } else {
+            setPlcConnErrors(prev => ({ ...prev, [plc.id]: data.error || 'Error de conexión' }));
           }
         } catch (error) {
           console.error('Polling error:', error);
@@ -188,7 +226,7 @@ export default function PlantDashboard() {
   // Eliminar PLC con confirmación (ahora dentro del componente)
   const handleDeletePLC = async (plcId: string) => {
     if (!userId) return;
-    if (!confirm('¿Seguro que deseas borrar este PLC? Esta acción es permanente y no se puede deshacer.')) return;
+    if (!confirm(t.dbConfirmDelete)) return;
     await supabase.from('plcs').delete().eq('id', plcId);
     // Refrescar PLCs
     const { data: plcs } = await supabase
@@ -202,17 +240,22 @@ export default function PlantDashboard() {
   const displayPLCs = userPLCs;
 
 
-  // Real PLC errors/alerts from Supabase
+  // Real PLC errors/alerts from internal API
   const [recentErrors, setRecentErrors] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchErrors = async () => {
-      const { data, error } = await supabase
-        .from('plc_errors')
-        .select('*')
-        .order('time', { ascending: false })
-        .gte('time', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()); // Últimos 7 días
-      if (!error && data) setRecentErrors(data);
+      try {
+        const res = await fetch('/api/plc/errors');
+        if (!res.ok) {
+          console.error('Error fetching PLC errors:', await res.text());
+          return;
+        }
+        const data = await res.json();
+        setRecentErrors(data || []);
+      } catch (fetchError) {
+        console.error('Error fetching PLC errors:', fetchError);
+      }
     };
     fetchErrors();
     const interval = setInterval(fetchErrors, 5000); // Refresca cada 5s
@@ -227,6 +270,10 @@ export default function PlantDashboard() {
     );
   }
 
+  if (isLocked) {
+    return <RestrictedAccess userEmail={userProfile?.email} userPlan={userProfile?.plan} />;
+  }
+
   return (
     <div className="min-h-screen w-full flex flex-col relative bg-[#111]">
       {/* Fondo Texturizado Azteca */}
@@ -239,13 +286,22 @@ export default function PlantDashboard() {
           onClick={() => router.push('/planta')}
           className="text-white/70 hover:text-white flex items-center gap-2 text-sm font-semibold transition-colors"
         >
-          <span>← Volver a Marcas</span>
+          <span>{t.dbBackToBrands}</span>
         </button>
         <div className="flex items-center gap-4">
           <LanguageSelector />
+          <button
+            onClick={() => router.push('/planes')}
+            className="hidden sm:flex group flex-row items-center justify-center gap-1.5 bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] hover:from-[#1e1b4b] hover:to-[#312e81] border border-indigo-500/30 hover:border-indigo-400/50 text-indigo-200 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shadow-[0_4px_10px_rgba(79,70,229,0.15)] hover:shadow-[0_4px_15px_rgba(79,70,229,0.3)]"
+          >
+            <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>{(t as any).changePlan || 'Cambiar Plan'}</span>
+          </button>
           <div className="h-6 w-px bg-white/20"></div>
           <span className="font-bold text-sm tracking-widest uppercase text-[#E8C673]">
-            Visión del Imperio
+            {t.dbVisionTitle}
           </span>
         </div>
       </header>
@@ -260,13 +316,13 @@ export default function PlantDashboard() {
           )}
           <h2 className="text-xl font-bold text-[#E8C673] mb-2 flex items-center gap-2">
             <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2h5" /></svg>
-            Líneas / Grupos de Producción
+            {t.dbProductionGroups}
           </h2>
           <form onSubmit={handleSaveGroup} className="flex gap-2 items-center mb-4">
             <input
               type="text"
               className="px-3 py-2 rounded bg-[#222] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-[#E8C673]"
-              placeholder="Nombre de la línea o grupo"
+              placeholder={t.dbGroupNamePlaceholder}
               value={groupName}
               onChange={e => setGroupName(e.target.value)}
               disabled={groupLoading}
@@ -278,21 +334,21 @@ export default function PlantDashboard() {
               className="bg-[#E8C673] text-black font-bold px-4 py-2 rounded hover:bg-[#CBB596] transition-all"
               disabled={groupLoading || !groupName.trim()}
             >
-              {editingGroup ? 'Guardar Cambios' : 'Crear Grupo'}
+              {editingGroup ? t.dbSaveChanges : t.dbCreateGroup}
             </button>
             {editingGroup && (
               <button
                 type="button"
                 className="ml-2 px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
                 onClick={() => { setEditingGroup(null); setGroupName(''); }}
-              >Cancelar</button>
+              >{t.dbCancel}</button>
             )}
           </form>
           <div className="flex flex-wrap gap-3">
             {groupLoading ? (
-              <span className="text-gray-400">Cargando...</span>
+              <span className="text-gray-400">{t.dbLoading}</span>
             ) : groups.length === 0 ? (
-              <span className="text-gray-400">No hay grupos creados.</span>
+              <span className="text-gray-400">{t.dbNoGroups}</span>
             ) : (
               groups.map(group => (
                 <div key={group.id} className="flex items-center gap-2 bg-[#1A1A1A] border border-[#E8C673]/30 rounded px-3 py-1">
@@ -300,11 +356,11 @@ export default function PlantDashboard() {
                   <button
                     className="text-xs text-blue-400 hover:underline"
                     onClick={() => { setEditingGroup(group); setGroupName(group.name); }}
-                  >Editar</button>
+                  >{t.dbEdit}</button>
                   <button
                     className="text-xs text-red-400 hover:underline"
                     onClick={() => handleDeleteGroup(group.id)}
-                  >Eliminar</button>
+                  >{t.dbDelete}</button>
                 </div>
               ))
             )}
@@ -313,10 +369,10 @@ export default function PlantDashboard() {
         <div className="mb-10 flex items-center justify-between">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-[#E8C673] tracking-widest font-serif uppercase flex items-center gap-3">
-              <span className="text-[#A3855B]">❂</span> Visión Global
+              <span className="text-[#A3855B]">❂</span> {t.dbGlobalVision}
             </h1>
             <p className="text-white/50 mt-2 font-medium tracking-wide uppercase text-xs">
-              Monitoreo panóptico de reliquias y nodos sincronizados en tiempo real
+              {t.dbGlobalVisionDesc}
             </p>
           </div>
         </div>
@@ -332,8 +388,8 @@ export default function PlantDashboard() {
           <div className="flex flex-col items-center justify-center p-12 mt-10 border-[2px] border-dashed border-[#69523C] bg-black/40 backdrop-blur-sm"
                style={{ clipPath: 'polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px)' }}>
             <span className="text-4xl mb-4">⚠️</span>
-            <h2 className="text-[#E8C673] font-serif uppercase tracking-widest text-lg font-bold">Sin Reliquias Conectadas</h2>
-            <p className="text-[#CBB596] text-sm mt-2 font-medium text-center">Todavía no hay conexiones físicas con equipos industriales.<br/>Solo los usuarios administradores pueden visualizar la maqueta de simulación.</p>
+            <h2 className="text-[#E8C673] font-serif uppercase tracking-widest text-lg font-bold">{t.dbNoPlcs}</h2>
+            <p className="text-[#CBB596] text-sm mt-2 font-medium text-center">{t.dbNoPlcsDesc}</p>
           </div>
         ) : (
           <div className="space-y-10">
@@ -365,7 +421,7 @@ export default function PlantDashboard() {
                                 value={plc.group_id || ''}
                                 onChange={e => handleAssignGroup(plc.id, e.target.value)}
                               >
-                                <option value="">Sin Grupo</option>
+                                <option value="">{t.dbNoGroup}</option>
                                 {groups.map(g => (
                                   <option key={g.id} value={g.id}>{g.name}</option>
                                 ))}
@@ -376,13 +432,13 @@ export default function PlantDashboard() {
                                 title="Inspeccionar en tiempo real"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" /></svg>
-                                Inspeccionar
+                                {t.dbInspect}
                               </button>
                               <button
                                 className="ml-2 px-2 py-1 rounded bg-red-700 text-white text-xs hover:bg-red-800 transition-all"
                                 onClick={() => handleDeletePLC(plc.id)}
                                 title="Eliminar PLC"
-                              >Eliminar</button>
+                              >{t.dbDelete}</button>
                             </div>
                             {/* ...existing code... */}
                             <div className="flex justify-between items-start mb-4">
@@ -398,27 +454,33 @@ export default function PlantDashboard() {
                                 </div>
                               </div>
                               {/* Foco Titilante Verde/Rojo */}
-                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${plcConnErrors[plc.id] ? 'bg-red-600 shadow-[0_0_12px_#dc2626]' : 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse'}`}></div>
                             </div>
                             {/* ...existing code... */}
                             {/* Visualización profesional de variables */}
                             <div className="mt-2">
+                              {plcConnErrors[plc.id] ? (
+                                <div className="text-xs text-red-400 font-mono bg-red-900/20 border border-red-500/30 rounded p-2 break-all">
+                                  ⚠ {plcConnErrors[plc.id]}
+                                </div>
+                              ) : (
+                              <>
                               <button
                                 className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
                                 onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
                               >
-                                {showVars[plc.id] ? 'Ocultar Variables' : 'Ver Variables'}
+                              {showVars[plc.id] ? t.dbHideVars : t.dbShowVars}
                               </button>
                               {showVars[plc.id] && (
                                 <div>
-                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">Variables</h4>
+                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">{t.dbVariables}</h4>
                                   {data && Object.keys(data).length > 0 ? (
                                     <div className="max-h-40 overflow-y-auto rounded border border-[#CBB596]/30 bg-white/80 shadow-inner">
                                       <table className="min-w-full text-xs text-left">
                                         <thead className="bg-[#F5E9D0] sticky top-0 z-10">
                                           <tr>
-                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Nombre</th>
-                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Valor</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">{t.dbColName}</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">{t.dbColValue}</th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -432,9 +494,11 @@ export default function PlantDashboard() {
                                       </table>
                                     </div>
                                   ) : (
-                                    <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
+                                    <div className="text-xs text-gray-400 italic">{t.dbNoVars}</div>
                                   )}
                                 </div>
+                              )}
+                              </>
                               )}
                             </div>
                           </div>
@@ -453,7 +517,7 @@ export default function PlantDashboard() {
                 <div>
                   <h3 className="text-lg font-bold text-[#E8C673] mb-3 flex items-center gap-2">
                     <svg className="w-5 h-5 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    Sin Grupo
+                    {t.dbNoGroup}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {plcsNoGroup.map((plc) => {
@@ -473,7 +537,7 @@ export default function PlantDashboard() {
                                 value={plc.group_id || ''}
                                 onChange={e => handleAssignGroup(plc.id, e.target.value)}
                               >
-                                <option value="">Sin Grupo</option>
+                                <option value="">{t.dbNoGroup}</option>
                                 {groups.map(g => (
                                   <option key={g.id} value={g.id}>{g.name}</option>
                                 ))}
@@ -492,26 +556,32 @@ export default function PlantDashboard() {
                                 </div>
                               </div>
                               {/* Foco Titilante Verde/Rojo */}
-                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${isOnline ? 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse' : 'bg-red-600 shadow-[0_0_12px_#dc2626]'}`}></div>
+                              <div className={`w-4 h-4 rounded-full mt-1 shrink-0 ${plcConnErrors[plc.id] ? 'bg-red-600 shadow-[0_0_12px_#dc2626]' : 'bg-green-500 shadow-[0_0_12px_#22c55e] animate-pulse'}`}></div>
                             </div>
                             {/* Visualización profesional de variables */}
                             <div className="mt-2">
+                              {plcConnErrors[plc.id] ? (
+                                <div className="text-xs text-red-400 font-mono bg-red-900/20 border border-red-500/30 rounded p-2 break-all">
+                                  ⚠ {plcConnErrors[plc.id]}
+                                </div>
+                              ) : (
+                              <>
                               <button
                                 className="px-3 py-1 rounded bg-[#E8C673] text-[#312011] font-bold text-xs uppercase tracking-widest shadow hover:bg-[#CBB596] transition-all mb-1"
                                 onClick={() => setShowVars(prev => ({ ...prev, [plc.id]: !prev[plc.id] }))}
                               >
-                                {showVars[plc.id] ? 'Ocultar Variables' : 'Ver Variables'}
+                              {showVars[plc.id] ? t.dbHideVars : t.dbShowVars}
                               </button>
                               {showVars[plc.id] && (
                                 <div>
-                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">Variables</h4>
+                                  <h4 className="font-bold text-[#69523C] text-xs uppercase mb-1 tracking-widest">{t.dbVariables}</h4>
                                   {data && Object.keys(data).length > 0 ? (
                                     <div className="max-h-40 overflow-y-auto rounded border border-[#CBB596]/30 bg-white/80 shadow-inner">
                                       <table className="min-w-full text-xs text-left">
                                         <thead className="bg-[#F5E9D0] sticky top-0 z-10">
                                           <tr>
-                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Nombre</th>
-                                            <th className="py-1 px-2 font-bold text-[#A3855B]">Valor</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">{t.dbColName}</th>
+                                            <th className="py-1 px-2 font-bold text-[#A3855B]">{t.dbColValue}</th>
                                           </tr>
                                         </thead>
                                         <tbody>
@@ -525,9 +595,11 @@ export default function PlantDashboard() {
                                       </table>
                                     </div>
                                   ) : (
-                                    <div className="text-xs text-gray-400 italic">Sin variables disponibles</div>
+                                    <div className="text-xs text-gray-400 italic">{t.dbNoVars}</div>
                                   )}
                                 </div>
+                              )}
+                              </>
                               )}
                             </div>
                           </div>
@@ -551,13 +623,13 @@ export default function PlantDashboard() {
         >
           <div className="px-6 py-4 border-b border-[#E8C673]/20 bg-black/30 flex items-center gap-3">
             <svg className="w-6 h-6 text-[#E8C673]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-            <h2 className="text-lg md:text-xl font-bold font-serif uppercase tracking-widest text-[#E8C673]">Registro de Alertas y Anomalías</h2>
+            <h2 className="text-lg md:text-xl font-bold font-serif uppercase tracking-widest text-[#E8C673]">{t.dbAlertsTitle}</h2>
           </div>
           {isAdmin && (
             <div className="flex justify-end px-6 py-2 bg-black/20">
               <button
                 onClick={async () => {
-                  if (confirm('¿Seguro que deseas borrar todos los errores? Esta acción no se puede deshacer.')) {
+                  if (confirm(t.dbConfirmClearErrors)) {
                     await supabase.from('plc_errors').delete().neq('id', 0);
                     // Refresca la lista de errores
                     const { data, error } = await supabase
@@ -570,7 +642,7 @@ export default function PlantDashboard() {
                 }}
                 className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded shadow transition-all"
               >
-                Borrar todos los errores
+                {t.dbClearErrors}
               </button>
             </div>
           )}
@@ -578,11 +650,11 @@ export default function PlantDashboard() {
             <table className="min-w-full text-sm text-left">
               <thead className="bg-[#1A2624] text-[#E8C673] uppercase text-xs border-b border-[#E8C673]/20">
                 <tr>
-                  <th className="py-3 px-4 font-bold">Hora</th>
-                  <th className="py-3 px-4 font-bold">Equipo/Nodo</th>
-                  <th className="py-3 px-4 font-bold">Código</th>
-                  <th className="py-3 px-4 font-bold">Descripción</th>
-                  <th className="py-3 px-4 font-bold">Severidad</th>
+                  <th className="py-3 px-4 font-bold">{t.dbColTime}</th>
+                  <th className="py-3 px-4 font-bold">{t.dbColEquip}</th>
+                  <th className="py-3 px-4 font-bold">{t.dbColCode}</th>
+                  <th className="py-3 px-4 font-bold">{t.dbColDesc}</th>
+                  <th className="py-3 px-4 font-bold">{t.dbColSeverity}</th>
                 </tr>
               </thead>
               <tbody>
@@ -598,7 +670,7 @@ export default function PlantDashboard() {
                       <td className="py-2 px-4 whitespace-nowrap">{err.equip}</td>
                       <td className="py-2 px-4 font-bold">{err.code}</td>
                       <td className="py-2 px-4">{err.desc}</td>
-                      <td className="py-2 px-4 font-bold uppercase">{err.resolved ? 'Resuelto' : err.severity}</td>
+                      <td className="py-2 px-4 font-bold uppercase">{err.resolved ? t.dbResolved : err.severity}</td>
                     </tr>
                   );
                 })}

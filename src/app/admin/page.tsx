@@ -4,27 +4,59 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 export default function AdminPage() {
+  const [adminToken, setAdminToken] = useState('');
   const [text, setText] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+
+  const handleImageUpload = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      // No borramos el texto para permitir combinación de imagen y notas
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsHovering(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
 
   const handleSave = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && !imagePreview) return;
     setLoading(true);
     setStatus('Procesando con OpenAI y guardando en Supabase...');
     
     try {
+      const payload = { text, image: imagePreview, adminToken };
+
       const res = await fetch('/api/ingest', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();
       
       if (res.ok) {
-        setStatus('✅ ' + data.message);
-        setText(''); // Limpia el formulario
+        setStatus('✅ ' + data.message + (imagePreview ? ' (Texto extraído por OCR)' : ''));
+        setText('');
+        clearImage();
       } else {
         setStatus('❌ Error: ' + data.error);
       }
@@ -64,20 +96,80 @@ export default function AdminPage() {
            <h1 className="text-2xl font-bold tracking-wide text-[#E0F2F1]">Panel Administrativo de IA</h1>
         </div>
         <p className="text-xs text-white/60 mb-6 font-light uppercase tracking-wider">Pega aquí el texto de tus manuales técnicos para que la IA los memorice.</p>
-        
+
+        <input
+          type="password"
+          placeholder="Clave de Administrador"
+          value={adminToken}
+          onChange={(e) => setAdminToken(e.target.value)}
+          className="w-full text-sm font-mono tracking-wider bg-black/80 border border-[#0D9488]/50 p-4 rounded-xl text-[#0D9488] focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all mb-4 placeholder-[#0D9488]/30 shadow-inner"
+        />
+
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                  e.preventDefault();
+                  handleImageUpload(file);
+                  break;
+                }
+              }
+            }
+          }}
           placeholder="Ej: La bomba hidráulica de agua modelo AZ-900 debe ser calibrada..."
           className="w-full h-40 p-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-[#0D9488]/70 focus:bg-white/10 transition-all font-light resize-none mb-6 shadow-inner"
         />
+
+        {/* Sección Image Upload o DND */}
+        <div 
+          onDragOver={(e) => { e.preventDefault(); setIsHovering(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setIsHovering(false); }}
+          onDrop={handleDrop}
+          className={`w-full p-4 mb-6 border-2 border-dashed rounded-xl transition-all ${
+            isHovering ? 'border-[#D4AF37] bg-black/40' : 'border-[#0D9488]/50 bg-white/5'
+          } ${imagePreview ? 'hidden' : 'flex flex-col items-center justify-center cursor-pointer hover:bg-white/10'}`}
+        >
+          <label className="cursor-pointer flex flex-col items-center gap-2 text-white/70 hover:text-white transition-colors">
+            <svg className="w-8 h-8 text-[#0D9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span className="text-sm font-medium">Sube una imagen o arrástrala aquí</span>
+            <span className="text-xs text-white/40">OpenAI lo leerá y extraerá el texto (OCR)</span>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+          </label>
+        </div>
+
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="w-full mb-6 relative group border border-white/10 rounded-xl overflow-hidden bg-black/20 flex justify-center p-2">
+            <img src={imagePreview} alt="Preview" className="max-h-48 object-contain rounded" />
+            <button 
+              onClick={clearImage}
+              className="absolute top-2 right-2 bg-red-600/80 hover:bg-red-500 text-white rounded-full p-1.5 transition-colors opacity-0 group-hover:opacity-100 shadow-lg"
+              title="Quitar imagen"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 text-xs text-green-300 rounded shadow-sm">
+              Imagen lista para procesar con OCR
+            </div>
+          </div>
+        )}
         
         <button
           onClick={handleSave}
-          disabled={loading || !text.trim()}
+          disabled={loading || (!text.trim() && !imagePreview)}
           className="w-full sm:w-auto bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-3 px-8 rounded-xl text-xs uppercase tracking-[0.15em] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
         >
-          {loading ? 'Vectorizando Manuscritos...' : 'Guardar y Enseñar a la IA'}
+          {loading ? 'Procesando Documentos...' : 'Guardar y Enseñar a la IA'}
         </button>
         
         {status && (

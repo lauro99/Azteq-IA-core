@@ -71,6 +71,19 @@ export default function AyudaConexionPlanta() {
                 <li><strong className="text-white">Tipo de Dato y Unidad:</strong> Si es un Bit (ON/OFF), un Entero (número), etc. Para números, ingresa su unidad de medida (ej. °C, PSI, bar). Para la casilla de Unidad en tipos booleanos (Bits), puedes usar textos que representen sus estados como "(ON/OFF)", "Abierto/Cerrado" o dejarlo en blanco.</li>
                 <li><strong className="text-white">Descripción Semántica:</strong> Esto es <span className="text-[#E8C673] font-semibold">crucial</span>. La IA no sabe qué es "M0.0". Debes decirle: <em>"Bomba Principal de Enfriamiento"</em>.</li>
               </ul>
+
+              <div className="bg-[#1A2624] border border-green-900/60 rounded-lg p-4 mt-6">
+                <h3 className="font-bold text-green-400 mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  Tip: Cómo leer Contadores (CTU/CTD) y Bloques de Datos (DB) en Siemens
+                </h3>
+                <ul className="list-disc list-inside text-gray-300 space-y-2 text-sm">
+                  <li><strong>Contadores:</strong> En TIA Portal, conecta el pin <code>CV</code> (Current Value) a una Memoria Word como "MW10". Luego, configúralo en Azteq-IA como <code>MW10</code> de tipo <em>Enteros (Int)</em>.</li>
+                  <li><strong>Bloques de Datos (DB):</strong> Asegúrate de desmarcar "Acceso optimizado a bloques" en las Propiedades del DB (y compilar). Configúralos en Azteq-IA usando la fila de la columna Offset, por ejemplo si un bit cae en Offset 0.4 de DB1, la dirección es <code>DB1,X0.4</code>.
+                    <br/><span className="pl-6 text-gray-400 text-xs">Nota: Si tu programa escalera no fuerza apagado (reset) un DB, la memoria se quedará encendida con el último valor recordado.</span>
+                  </li>
+                </ul>
+              </div>
             </section>
             
             <section className="bg-[#111] border border-gray-800 rounded-lg p-6 flex flex-col items-center justify-center text-center">

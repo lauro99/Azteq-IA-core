@@ -17,6 +17,7 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<'none' | 'expert' | 'plant'>('none');
   const [showInfo, setShowInfo] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>(''); // Nuevo estado para el plan
 
   const isAdmin = user?.email?.split('@')[0].toLowerCase().startsWith('adm');
 
@@ -24,17 +25,37 @@ export default function Home() {
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      if (session?.user) {
+        fetchUserPlan(session.user.id);
+      }
     };
     fetchSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);
+        if (session?.user) {
+          fetchUserPlan(session.user.id);
+        } else {
+          setUserPlan('');
+        }
       }
     );
 
     return () => authListener.subscription.unsubscribe();
   }, []);
+
+  const fetchUserPlan = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('plan')
+      .eq('id', userId)
+      .single();
+      
+    if (data) {
+      setUserPlan(data.plan);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -80,12 +101,12 @@ export default function Home() {
             <button 
               onClick={() => setShowInfo(true)}
               className="group flex flex-row items-center gap-2 bg-black/40 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/30 px-3 py-2 rounded-xl transition-all backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
-              title="¿Qué hace cada IA?"
+              title={(t as any)?.infoTooltip || '¿Qué hace cada IA?'}
             >
               <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Info</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">{(t as any).infoBtn || 'Info'}</span>
             </button>
           </div>
           <button 
@@ -102,25 +123,34 @@ export default function Home() {
             <>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488]"></div>
-                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">Sesión Activa</span>
+                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">{(t as any).activeSession || 'Sesión Activa'} {userPlan ? `| ${(t as any).planWord || 'PLAN'} ${userPlan.toUpperCase()}` : ''}</span>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <span className="text-white text-sm font-light">Operador: <b className="text-[#D4AF37]">{user.email?.split('@')[0]}</b></span>
+                <span className="text-white text-sm font-light">{(t as any).operatorLabel || 'Operador:'} <b className="text-[#D4AF37]">{user.email?.split('@')[0]}</b></span>
                 {isAdmin && (
                   <Link 
                     href="/admin" 
                     className="group flex flex-col sm:flex-row items-center gap-2 bg-[#1a1c18]/80 hover:bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-[0.1em] transition-all w-full sm:w-auto shadow-[0_0_10px_rgba(212,175,55,0.1)] hover:shadow-[0_0_15px_rgba(212,175,55,0.3)]"
                   >
-                    <span>Panel Admin</span>
+                    <span>{(t as any).adminPanel || 'Panel Admin'}</span>
                     <span className="text-sm group-hover:rotate-90 transition-transform duration-500">❂</span>
                   </Link>
                 )}
+                <Link
+                  href="/planes"
+                  className="group flex flex-col sm:flex-row items-center justify-center gap-1.5 bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] hover:from-[#1e1b4b] hover:to-[#312e81] border border-indigo-500/30 hover:border-indigo-400/50 text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all w-full sm:w-auto shadow-[0_4px_10px_rgba(79,70,229,0.15)] hover:shadow-[0_4px_15px_rgba(79,70,229,0.3)]"
+                >
+                  <svg className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>{(t as any).changePlan || 'Cambiar Plan'}</span>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   disabled={isLoading}
                   className="bg-red-900/50 hover:bg-red-800 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all w-full sm:w-auto border border-red-500/30"
                 >
-                  {isLoading ? '...' : 'Cerrar Sesión'}
+                  {isLoading ? '...' : ((t as any).logout || 'Cerrar Sesión')}
                 </button>
               </div>
             </>
@@ -128,33 +158,49 @@ export default function Home() {
             <>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#0D9488] shadow-[0_0_8px_#0D9488] animate-pulse"></div>
-                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">{t.accessControl}</span>
+                <span className="text-[#E0F2F1] text-[10px] font-bold uppercase tracking-widest">{t.loginTitle || 'Iniciar Sesión'}</span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-3 w-full">
                 <input 
                   id="operatorIdInput"
-                  type="text" 
-                  placeholder={t.operatorId} 
+                  type="email" 
+                  placeholder={t.emailAddress || "Correo electrónico"} 
                   value={operatorId || ''}
                   onChange={(e) => setOperatorId(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
                   disabled={isLoading}
-                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
                 <input 
                   type="password" 
-                  placeholder={t.accessCode} 
+                  placeholder={t.password || "Contraseña"} 
                   value={accessCode || ''}
                   onChange={(e) => setAccessCode(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }}
                   disabled={isLoading}
-                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full flex-1" 
+                  className="bg-white/5 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#D4AF37]/50 focus:bg-white/10 transition-all font-light w-full" 
                 />
-                <button 
-                  onClick={handleLogin}
-                  disabled={isLoading}
-                  className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black px-6 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
-                >
-                  {isLoading ? '...' : t.enter}
-                </button>
+                <div className="flex gap-2 w-full mt-1">
+                  <button 
+                    onClick={handleLogin}
+                    disabled={isLoading}
+                    className="bg-[#D4AF37] hover:bg-[#E5C158] disabled:opacity-50 disabled:cursor-not-allowed text-black px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1 shadow-[0_4px_15px_rgba(212,175,55,0.2)]"
+                  >
+                    {isLoading ? '...' : t.enter}
+                  </button>
+                  <button 
+                    onClick={() => router.push('/registro')}
+                    disabled={isLoading}
+                    className="bg-transparent border border-[#0D9488]/50 hover:bg-[#0D9488]/20 disabled:opacity-50 disabled:cursor-not-allowed text-[#E0F2F1] px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-1"
+                  >
+                    {t.register || 'Registrarse'}
+                  </button>
+                </div>
+                <div className="w-full text-center mt-2">
+                  <Link href="/recuperar" className="text-white/40 hover:text-[#0D9488] text-[10px] uppercase font-bold tracking-widest transition-colors">
+                    {t.forgotPassword || '¿Olvidaste tu contraseña?'}
+                  </Link>
+                </div>
               </div>
               {errorMsg && <p className="text-red-400 text-[10px] uppercase font-bold tracking-widest">{errorMsg}</p>}
             </>
@@ -163,11 +209,103 @@ export default function Home() {
       </div>
       <div className="relative z-10 w-full min-h-screen pt-4 pb-2 px-6 md:px-12 flex flex-col">
         <main 
-          className="w-full flex-1 flex flex-col justify-end"
+          className="w-full flex-1 flex flex-col justify-end pointer-events-auto h-full"
           onClick={(e) => {
             if (e.target === e.currentTarget) setExpandedCard('none');
           }}
         >
+          {/* SI EL USUARIO NO ESTÁ LOGUEADO, MOSTRAMOS LOS PLANES */}
+          {!user ? (
+            <div id="planes" className="w-full flex flex-col items-center justify-center gap-6 z-20 overflow-y-auto">
+              <div className="text-center mb-2 mt-12 md:mt-24 px-4 bg-black/40 backdrop-blur-md rounded-2xl py-4 border border-white/5">
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-4 tracking-tight drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">{t.choosePlan || 'Elige tu Plan'}</h2>
+                <p className="text-white/80 text-xs md:text-sm max-w-xl mx-auto">{t.choosePlanDesc || 'Selecciona la suscripción que mejor se adapte a tus necesidades para acceder al sistema.'}</p>
+              </div>
+              
+              <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 w-full max-w-6xl mx-auto px-4 pb-12">
+                {/* PLAN FREE */}
+                <div className="flex-1 bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-[#0D9488]/50 transition-all hover:-translate-y-2 group">
+                  <div className="w-12 h-12 bg-white/5 border border-white/10 text-white rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-xl">🆓</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{t.basicPlan || 'Básico'}</h3>
+                  <div className="text-3xl font-extrabold text-[#0D9488] mb-4 drop-shadow-[0_0_10px_rgba(13,148,136,0.3)]">$0 <span className="text-sm text-white/50 font-normal">{t.perMonth || 'USD /mes'}</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0D9488] font-bold mt-0.5">✓</span> {t.planBasicAccess || 'Acceso a la IA Experta'}
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#0D9488] font-bold mt-0.5">✓</span> {t.planBasicLimit || 'Límite de 20 preguntas al día'}
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => router.push('/registro')}
+                    className="mt-auto w-full bg-white/10 hover:bg-[#0D9488] text-white hover:text-black py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(13,148,136,0.4)]"
+                  >
+                    {t.registerFree || 'Crear Cuenta Gratis'}
+                  </button>
+                </div>
+
+                {/* PLAN PRO */}
+                <div className="flex-1 bg-black/70 backdrop-blur-xl border-[2px] border-[#D4AF37] p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_0_40px_rgba(212,175,55,0.15)] hover:shadow-[0_0_50px_rgba(212,175,55,0.3)] transition-all hover:-translate-y-2 relative transform md:-translate-y-4 group">
+                  <div className="absolute top-0 right-0 bg-[#D4AF37] text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                    {t.recommended || 'Recomendado'}
+                  </div>
+                  <div className="w-14 h-14 bg-[#D4AF37]/10 border border-[#D4AF37]/50 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-2xl">⚡</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">{t.proPlan || 'Profesional'}</h3>
+                  <div className="text-4xl font-extrabold text-[#D4AF37] mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">$400 <span className="text-sm text-white/50 font-normal">{t.perMonth || 'USD /mes'}</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> 
+                      <span>{t.planProAccess ? `${t.planProAccess[0]} ` : 'Acceso '}<b className="text-white">{t.planProAccess ? t.planProAccess[1] : 'ilimitado'}</b>{t.planProAccess ? ` ${t.planProAccess[2]}` : ' a la IA Experta'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> 
+                      <span>{t.planProPlcs ? `${t.planProPlcs[0]} ` : 'Conectar hasta '}<b className="text-white">{t.planProPlcs ? t.planProPlcs[1] : '2 PLCs'}</b>{t.planProPlcs ? ` ${t.planProPlcs[2]}` : ' en IA Planta'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-[#D4AF37] font-bold mt-0.5">✓</span> {t.planProSupport || 'Soporte prioritario'}
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => router.push('/registro')}
+                    className="mt-auto w-full bg-[#D4AF37] hover:bg-[#F2CD5C] text-black py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs transition-all shadow-[0_0_20px_rgba(212,175,55,0.5)] hover:scale-105 active:scale-95"
+                  >
+                    {t.registerPro || 'Registrarse para Suscribir'}
+                  </button>
+                </div>
+
+                {/* PLAN ENTERPRISE */}
+                <div className="flex-1 bg-black/60 backdrop-blur-xl border border-white/10 p-6 md:p-8 rounded-3xl flex flex-col items-center text-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-blue-500/50 transition-all hover:-translate-y-2 group">
+                  <div className="w-12 h-12 bg-white/5 border border-white/10 text-blue-400 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <span className="text-xl">🏢</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{t.freeAccessPlan || 'Acceso Libre'}</h3>
+                  <div className="text-3xl font-extrabold text-blue-400 mb-4 drop-shadow-[0_0_10px_rgba(96,165,250,0.3)]">$1000 <span className="text-sm text-white/50 font-normal">{t.perMonth || 'USD /mes'}</span></div>
+                  <ul className="text-left text-white/70 space-y-3 mb-8 w-full text-xs font-light">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold mt-0.5">✓</span> 
+                      <span>{t.planEntAccess ? `${t.planEntAccess[0]} ` : 'Acceso '}<b className="text-white">{t.planEntAccess ? t.planEntAccess[1] : 'total e ilimitado'}</b>{t.planEntAccess ? ` ${t.planEntAccess[2]}` : ' al sistema'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold mt-0.5">✓</span> 
+                      <span>{t.planEntPlcs ? `${t.planEntPlcs[0]} ` : 'Conectar '}<b className="text-white">{t.planEntPlcs ? t.planEntPlcs[1] : 'PLCs ilimitados'}</b>{t.planEntPlcs ? ` ${t.planEntPlcs[2]}` : ''}</span>
+                    </li>
+                  </ul>
+                  <button 
+                    onClick={() => router.push('/registro')}
+                    className="mt-auto w-full bg-white/10 hover:bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all border border-white/10 hover:border-transparent hover:shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+                  >
+                    {t.registerEnt || 'Registrarse para Acceso'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* YA LOGUEADO, MOSTRAMOS OPCIONES ORIGINALES IA EXPERTA / IA PLANTA EN LAS ORILLAS */
+            <>
           {/* VERSION MOVIL: Burbujas flotantes */}
           <div className={`md:hidden flex ${expandedCard !== 'none' ? 'flex-col items-center' : 'flex-row items-end justify-between'} gap-6 pb-2 w-full transition-all duration-500`}>
             
@@ -206,7 +344,7 @@ export default function Home() {
 
               <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'expert' ? 'opacity-100' : 'opacity-0'}`}>
                 <span className={`${user ? 'bg-[#0D9488]/50' : 'bg-[#0D9488]/20'} border border-[#0D9488]/50 text-[#E0F2F1] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                  {user ? ((t as any).freeAccessBadge || '✓ ACCESO LIBRE') : `🔒 ${t.accessControl}`}
                 </span>
               </div>
               
@@ -223,7 +361,7 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaExpert}</h3>
                 <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaExpertDesc}</p>
                 <div className="text-[#0D9488] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto">
-                  {user ? 'Entrar al Chat →' : 'Inicia sesión \u2191'}
+                  {user ? ((t as any).enterChat || 'Entrar al Chat →') : ((t as any).loginAbove || 'Inicia sesión ↑')}
                 </div>
               </div>
             </div>
@@ -234,6 +372,10 @@ export default function Home() {
                 if (expandedCard !== 'plant') {
                   e.preventDefault();
                   setExpandedCard('plant');
+                  return;
+                }
+                if (userPlan === 'free') {
+                  router.push('/planes');
                   return;
                 }
                 if (user) {
@@ -262,8 +404,8 @@ export default function Home() {
               </button>
 
               <div className={`absolute top-0 right-0 p-3 transition-opacity duration-300 ${expandedCard === 'plant' ? 'opacity-100' : 'opacity-0'}`}>
-                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                <span className={`${user ? (userPlan === 'free' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-[#D4AF37]/50 text-[#FFF5D1] border-[#D4AF37]/50') : 'bg-[#D4AF37]/20 text-[#FFF5D1] border-[#D4AF37]/50'} border text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? (userPlan === 'free' ? ((t as any).requiresProBadge || '🔒 REQUIERE PRO') : ((t as any).freeAccessBadge || '✓ ACCESO LIBRE')) : `🔒 ${t.accessControl}`}
                 </span>
               </div>
 
@@ -281,8 +423,8 @@ export default function Home() {
               <div className={`flex flex-col items-center flex-1 transition-opacity duration-300 w-full ${expandedCard === 'plant' ? 'opacity-100 delay-100 block' : 'opacity-0 hidden'}`}>
                 <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
                 <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-                <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto">
-                  {user ? 'Entrar a Control →' : 'Inicia sesión \u2191'}
+              <div className={`${userPlan === 'free' ? 'text-red-400' : 'text-[#D4AF37]'} font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto`}>
+                {user ? (userPlan === 'free' ? ((t as any).unlockPro || 'Desbloquear Plan Pro →') : ((t as any).enterControl || 'Entrar a Control →')) : ((t as any).loginAbove || 'Inicia sesión ↑')}
                 </div>
               </div>
             </div>
@@ -303,7 +445,7 @@ export default function Home() {
             >
               <div className="absolute top-0 right-0 p-3">
                 <span className={`${user ? 'bg-[#0D9488]/50' : 'bg-[#0D9488]/20'} border border-[#0D9488]/50 text-[#E0F2F1] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                  {user ? ((t as any).freeAccessBadge || '✓ ACCESO LIBRE') : `🔒 ${t.accessControl}`}
                 </span>
               </div>
               <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#0D9488] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#0D9488]/20 transition-all">
@@ -316,12 +458,16 @@ export default function Home() {
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaExpert}</h3>
               <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaExpertDesc}</p>
               <div className="text-[#0D9488] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
-                {user ? 'Entrar al Chat →' : 'Inicia sesión arriba \u2191'}
+                {user ? ((t as any).enterChat || 'Entrar al Chat →') : ((t as any).loginAbove || 'Inicia sesión arriba ↑')}
               </div>
             </div>
             
             <div 
               onClick={() => {
+                if (userPlan === 'free') {
+                  router.push('/planes');
+                  return;
+                }
                 if (user) {
                   router.push('/planta');
                 } else {
@@ -332,8 +478,8 @@ export default function Home() {
               className={`group rounded-3xl bg-black/40 backdrop-blur-sm border ${user ? 'border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.2)]' : 'border-white/10'} p-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:border-[#D4AF37]/50 transition-all cursor-pointer flex flex-col items-center text-center h-full relative overflow-hidden w-[320px] shrink-0`}
             >
               <div className="absolute top-0 right-0 p-3">
-                <span className={`${user ? 'bg-[#D4AF37]/50 text-[#FFF5D1]' : 'bg-[#D4AF37]/20 text-[#FFF5D1]'} border border-[#D4AF37]/50 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
-                  {user ? '✓ ACCESO LIBRE' : `🔒 ${t.accessControl}`}
+                <span className={`${user ? (userPlan === 'free' ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-[#D4AF37]/50 text-[#FFF5D1] border-[#D4AF37]/50') : 'bg-[#D4AF37]/20 text-[#FFF5D1] border-[#D4AF37]/50'} border text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider`}>
+                  {user ? (userPlan === 'free' ? ((t as any).requiresProBadge || '🔒 REQUIERE PRO') : ((t as any).freeAccessBadge || '✓ ACCESO LIBRE')) : `🔒 ${t.accessControl}`}
                 </span>
               </div>
               <div className="w-12 h-12 bg-white/5 border border-white/10 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-[#D4AF37]/20 transition-all">
@@ -347,14 +493,21 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-bold text-white mb-2 tracking-wide">{t.iaPlant}</h3>
               <p className="text-white/60 mb-4 flex-1 text-xs leading-relaxed font-light">{t.iaPlantDesc}</p>
-              <div className="text-[#D4AF37] font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform">
-                {user ? 'Entrar a Control →' : 'Inicia sesión arriba \u2191'}
+              <div className={`${userPlan === 'free' ? 'text-red-400' : 'text-[#D4AF37]'} font-semibold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform mx-auto`}>
+                {user ? (userPlan === 'free' ? ((t as any).unlockPro || 'Desbloquear Plan Pro →') : ((t as any).enterControl || 'Entrar a Control →')) : ((t as any).loginAbove || 'Inicia sesión ↑')}
               </div>
             </div>
           </div>
+            </>
+          )}
         </main>
-        <footer className="w-full mt-4 pt-4 border-t border-white/10 text-center text-xs text-white/40 tracking-widest uppercase">
-          <p>{t.footer}</p>
+        <footer className="w-full mt-4 pt-4 pb-4 border-t border-white/10 text-center flex flex-col items-center gap-2">
+          <p className="text-xs text-white/40 tracking-widest uppercase">{t.footer}</p>
+          <div className="flex flex-wrap justify-center gap-4 text-[10px] text-white/30 uppercase tracking-widest">
+            <Link href="/politica-privacidad" className="hover:text-[#0D9488] transition-colors">Privacidad y Seguridad</Link>
+            <Link href="/terminos-condiciones" className="hover:text-[#D4AF37] transition-colors">Términos Industriales</Link>
+            <Link href="/politica-cookies" className="hover:text-white/70 transition-colors">Normativa Cookies</Link>
+          </div>
         </footer>
       </div>
 
@@ -384,22 +537,22 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaExpert || 'IA Experta'}</h3>
-                  <p className="text-[#0D9488] text-xs font-bold tracking-widest uppercase">Asistente Técnico (RAG)</p>
+                  <p className="text-[#0D9488] text-xs font-bold tracking-widest uppercase">{(t as any)?.iaExpertSubtitle || 'Asistente Técnico (RAG)'}</p>
                 </div>
               </div>
               
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Zero Alucinaciones:</strong> Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat1 || 'Zero Alucinaciones:'}</strong> {(t as any)?.iaExpertFeat1Desc || 'Respuestas 100% confiables basadas exclusivamente en *tus* manuales y diagramas (PDF/TXT). Soluciona tus problemas con total seguridad.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Dispara tu OEE (Downtime Killer):</strong> Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat2 || 'Dispara tu OEE (Downtime Killer):'}</strong> {(t as any)?.iaExpertFeat2Desc || 'Olvida las horas buscando en papel. Diagnostica y resuelve fallas complejas en segundos, aumentando tu Disponibilidad Pura hasta un 40%.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#0D9488] mt-0.5">✓</span>
-                  <span><strong>Experto Matemático Integrado:</strong> Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.</span>
+                  <span><strong>{(t as any)?.iaExpertFeat3 || 'Experto Matemático Integrado:'}</strong> {(t as any)?.iaExpertFeat3Desc || 'Cálculos de calibración avanzados e ingeniería de control resueltos al instante de forma precisa.'}</span>
                 </li>
               </ul>
             </div>
@@ -420,22 +573,22 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white tracking-widest uppercase">{t.iaPlant || 'IA Planta'}</h3>
-                  <p className="text-[#D4AF37] text-xs font-bold tracking-widest uppercase">Monitoreo IoT & Gemelo Digital</p>
+                  <p className="text-[#D4AF37] text-xs font-bold tracking-widest uppercase">{(t as any)?.iaPlantSubtitle || 'Monitoreo IoT & Gemelo Digital'}</p>
                 </div>
               </div>
 
               <ul className="space-y-4 text-sm text-white/70 font-light relative z-10">
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Conecta con Cualquier PLC:</strong> Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat1 || 'Conecta con Cualquier PLC:'}</strong> {(t as any)?.iaPlantFeat1Desc || 'Compatibilidad nativa sin pagar licencias extras. Enlaza equipos Siemens, Modbus o Allen-Bradley en cuestión de clics.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Crece a tu Ritmo:</strong> Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat2 || 'Crece a tu Ritmo:'}</strong> {(t as any)?.iaPlantFeat2Desc || 'Desde automatizar una sola máquina hasta tener una flotilla multimarca en tu gemelo digital. Se adapta perfecto a tu presupuesto.'}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-[#D4AF37] mt-0.5">✓</span>
-                  <span><strong>Tu Planta en tu Bolsillo:</strong> Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.</span>
+                  <span><strong>{(t as any)?.iaPlantFeat3 || 'Tu Planta en tu Bolsillo:'}</strong> {(t as any)?.iaPlantFeat3Desc || 'Dashboards gerenciales en vivo. Monitorea KPIs críticos (presiones, cuellos de botella) desde tu celular o tablet en cualquier parte del mundo.'}</span>
                 </li>
               </ul>
             </div>
