@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, phone, company, plan } = await request.json();
+    const { name, email, phone, company, plan, message } = await request.json();
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -15,12 +15,13 @@ export async function POST(request: Request) {
         to: 'laureano.g.t@outlook.com', 
         subject: `Nuevo Formulario Azteq: Solicitud de Validación de Montaje`,
         html: `
-          <h2>Solicitud de Validación de Montaje - Formulario Azteq</h2>
+          <h2>Solicitud de Validación - Formulario Azteq</h2>
           <p><strong>Nombre:</strong> ${name}</p>
           <p><strong>Email (Sesión):</strong> ${email}</p>
           <p><strong>Teléfono:</strong> ${phone}</p>
           <p><strong>Empresa / Planta:</strong> ${company}</p>
           <p><strong>Plan Solicitado:</strong> ${plan}</p>
+          <p><strong>Mensaje Adicional:</strong><br/> ${message || '<em>Sin mensaje</em>'}</p>
         `,
       }),
     });

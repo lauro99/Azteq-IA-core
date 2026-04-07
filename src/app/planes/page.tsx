@@ -21,7 +21,7 @@ export default function PlanesPage() {
   
   // States for the new contact form
   const [showContactForm, setShowContactForm] = useState(false);
-  const [contactData, setContactData] = useState({ name: '', phone: '', company: '' });
+  const [contactData, setContactData] = useState({ name: '', phone: '', company: '', message: '' });
   const [isSendingContact, setIsSendingContact] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
 
@@ -60,6 +60,7 @@ export default function PlanesPage() {
           name: contactData.name,
           phone: contactData.phone,
           company: contactData.company,
+          message: contactData.message,
           email,
           plan: checkoutPlan === 'pro' ? 'Pro (Élite)' : 'Enterprise (Omni-Códice)'
         }),
@@ -408,7 +409,7 @@ export default function PlanesPage() {
                   <div className="absolute bottom-0 left-0 w-1 h-16 bg-[#d4af37]"></div>
 
                   <button 
-                    onClick={() => { setShowSupportModal(false); setShowContactForm(false); setContactSuccess(false); setContactData({ name: '', phone: '', company: '' }); }}
+                    onClick={() => { setShowSupportModal(false); setShowContactForm(false); setContactSuccess(false); setContactData({ name: '', phone: '', company: '', message: '' }); }}
                     className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-none bg-[#d4af37]/10 hover:bg-[#d4af37]/30 text-[#d4af37] transition-colors border border-[#d4af37]/30 [clip-path:polygon(3px_0,100%_0,calc(100%-3px)_100%,0_100%)] z-10"
                   >
                     ✕
@@ -452,6 +453,10 @@ export default function PlanesPage() {
                         <div>
                           <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Planta / Empresa</label>
                           <input required type="text" value={contactData.company} onChange={(e) => setContactData({...contactData, company: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50" placeholder="Nombre Empresa S.A. de C.V." />
+                        </div>
+                        <div>
+                          <label className="text-[#d4af37] text-[10px] font-mono uppercase tracking-widest block mb-1">Mensaje para Soporte</label>
+                          <textarea rows={3} value={contactData.message} onChange={(e) => setContactData({...contactData, message: e.target.value})} className="w-full bg-[#020403] border border-[#d4af37]/50 text-emerald-50 px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/50 resize-none" placeholder="Ingresa dudas, detalles de tus máquinas plc o necesidades..."></textarea>
                         </div>
                         <button 
                           type="submit"
