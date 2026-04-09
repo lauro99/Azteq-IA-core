@@ -107,6 +107,13 @@ export default function PlantDashboard() {
     const handleDeleteGroup = async (id: string) => {
       if (!confirm(t.dbConfirmDeleteGroup)) return;
       setGroupLoading(true);
+      try {
+        const { error } = await supabase.from('plc_groups').delete().eq('id', id);
+        if (error) throw error;
+      } catch (err: any) {
+        setGroupError(err.message || 'Error al eliminar grupo');
+      }
+      
       if (userId) {
         const { data } = await supabase.from('plc_groups').select('*').eq('user_id', userId).order('created_at', { ascending: true });
         setGroups(data || []);
