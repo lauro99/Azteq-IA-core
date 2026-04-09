@@ -158,30 +158,41 @@ export default function PlantDashboard() {
       const newData: Record<string, any> = {};
       
       const promises = userPLCs.map(async (plc) => {
-        // Obtenemos los valores a través de la misma API que en las vistas individuales,
-        // usamos el mapeo real de io_config para las máquinas físicas.
         try {
-          const res = await fetch('/api/plc/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              brand: plc.brand,
-              ip: plc.ip,
-              port: plc.port?.toString() || '102',
-              rack: Number(plc.rack) || 0,
-              slot: Number(plc.slot) || 1,
-              isCloud: plc.is_cloud,
-               // Forzamos simulación visual en el dashboard por ahora
-              ioTags: plc.io_config || []
-            })
-          });
-          const data = await res.json();
-          if (data.success) {
-            newData[plc.id] = data.data;
-            // Limpiar error previo si ahora hay éxito
-            setPlcConnErrors(prev => { const e = {...prev}; delete e[plc.id]; return e; });
+          if (plc.is_cloud) {
+            const { data, error } = await supabase
+              .from('plc_realtime')
+              .select('*')
+              .eq('plc_id', plc.id)
+              .single();
+
+            if (error || !data) {
+              setPlcConnErrors(prev => ({ ...prev, [plc.id]: 'Esperando lectura de la Nube...' }));
+            } else {
+              newData[plc.id] = { ...data.data, estatusGeneral: data.estatusgeneral };
+              setPlcConnErrors(prev => { const e = {...prev}; delete e[plc.id]; return e; });
+            }
           } else {
-            setPlcConnErrors(prev => ({ ...prev, [plc.id]: data.error || 'Error de conexión' }));
+            const res = await fetch('/api/plc/connect', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                brand: plc.brand,
+                ip: plc.ip,
+                port: plc.port?.toString() || '102',
+                rack: Number(plc.rack) || 0,
+                slot: Number(plc.slot) || 1,
+                isCloud: plc.is_cloud,
+                ioTags: plc.io_config || []
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              newData[plc.id] = data.data;
+              setPlcConnErrors(prev => { const e = {...prev}; delete e[plc.id]; return e; });
+            } else {
+              setPlcConnErrors(prev => ({ ...prev, [plc.id]: data.error || 'Error de conexión' }));
+            }
           }
         } catch (error) {
           console.error('Polling error:', error);

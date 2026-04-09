@@ -17,10 +17,20 @@ interface PlcConnection {
   tagsSignature: string;
 }
 
-const plcPool = new Map<string, PlcConnection>();
+const globalForPlcPool = global as unknown as { plcPool: Map<string, PlcConnection>; plCleanupInterval: NodeJS.Timeout };
+
+const plcPool = globalForPlcPool.plcPool || new Map<string, PlcConnection>();
+if (!globalForPlcPool.plcPool) {
+  globalForPlcPool.plcPool = plcPool;
+}
+
+// Limpiar intervalo anterior al recargar
+if (globalForPlcPool.plCleanupInterval) {
+  clearInterval(globalForPlcPool.plCleanupInterval);
+}
 
 // Limpieza de conexiones inactivas (>60s sin uso)
-setInterval(() => {
+globalForPlcPool.plCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of plcPool) {
     if (now - entry.lastUsed > 60_000) {
