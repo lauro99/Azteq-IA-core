@@ -365,7 +365,6 @@ function PlcDashboardContent() {
               rack: Number(rack),
               slot: Number(slot),
               isCloud: connectionMode === 'cloud',
-              mockMode,
               ioTags
             })
           });
@@ -383,7 +382,7 @@ function PlcDashboardContent() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags]);
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags]);
 
   if (loading) {
     return (
