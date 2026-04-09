@@ -124,6 +124,10 @@ function PlcDashboardContent() {
       }
   };
 
+  // Inicial tag states for new PLC
+  const [initTagName, setInitTagName] = useState('Inicio_Ciclo');
+  const [initTagAddress, setInitTagAddress] = useState('M0.0');
+
   const handleSavePlc = async () => {
     if (!newPlcName || !ipAddress || !user) {
       showToast("Falta nombre o IP para guardar el PLC", "error");
@@ -132,6 +136,15 @@ function PlcDashboardContent() {
     
     setIsSaving(true);
     try {
+      const initialTags = [{ 
+        id: crypto.randomUUID(), 
+        group: 'General', 
+        name: initTagName || 'Variable_1', 
+        address: initTagAddress || 'M0.0', 
+        type: 'Bool', 
+        unit: '' 
+      }];
+
       const { data, error } = await supabase
         .from('plcs')
         .insert([{
@@ -142,7 +155,8 @@ function PlcDashboardContent() {
           port: parseInt(port) || 102,
           rack: parseInt(rack) || 0,
           slot: parseInt(slot) || 1,
-          is_cloud: connectionMode === 'cloud'
+          is_cloud: connectionMode === 'cloud',
+          io_config: initialTags
         }])
         .select();
 
@@ -857,26 +871,51 @@ function PlcDashboardContent() {
 
               {/* Nombre y Guardado en el Panel Principal */}
               {!selectedPlcId && (
-                <div className="w-full mb-4 relative z-10 flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSaveName}</label>
-                  <div className="flex items-center gap-2 bg-[#F2EADA] border-[2px] border-[#A3855B]/50 p-1" style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}>
-                    <input 
-                      type="text"
-                      placeholder="Ej. Línea de Envasado 1"
-                      value={newPlcName}
-                      onChange={(e) => setNewPlcName(e.target.value)}
-                      className="bg-transparent text-sm text-[#312011] px-2 py-1 focus:outline-none flex-1 placeholder-[#A3855B]/60 font-bold"
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleSavePlc}
-                      disabled={isSaving || !newPlcName.trim() || !ipAddress.trim()}
-                      className="bg-[#D4AF37] hover:bg-[#CBB596] disabled:bg-gray-400 disabled:text-gray-200 text-[#312011] text-[10px] uppercase font-bold px-4 py-2 transition-all tracking-widest flex items-center gap-2"
-                      style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 5px)' }}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                      {isSaving ? '...' : t.plSave}
-                    </button>
+                <div className="w-full mb-4 relative z-10 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSaveName}</label>
+                    <div className="flex items-center gap-2 bg-[#F2EADA] border-[2px] border-[#A3855B]/50 p-1" style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}>
+                      <input 
+                        type="text"
+                        placeholder="Ej. Línea de Envasado 1"
+                        value={newPlcName}
+                        onChange={(e) => setNewPlcName(e.target.value)}
+                        className="bg-transparent text-sm text-[#312011] px-2 py-1 focus:outline-none flex-1 placeholder-[#A3855B]/60 font-bold"
+                      />
+                      <button 
+                        type="button"
+                        onClick={handleSavePlc}
+                        disabled={isSaving || !newPlcName.trim() || !ipAddress.trim()}
+                        className="bg-[#D4AF37] hover:bg-[#CBB596] disabled:bg-gray-400 disabled:text-gray-200 text-[#312011] text-[10px] uppercase font-bold px-4 py-2 transition-all tracking-widest flex items-center gap-2"
+                        style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 5px)' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                        {isSaving ? '...' : t.plSave}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">1er Tag Nominal</label>
+                      <input 
+                        type="text"
+                        placeholder="Nombre"
+                        value={initTagName}
+                        onChange={(e) => setInitTagName(e.target.value)}
+                        className="w-full bg-[#F2EADA] border-[2px] border-[#A3855B]/50 px-3 py-1.5 text-sm text-[#312011] placeholder-[#A3855B]/60 focus:outline-none focus:border-[#69523C] transition-all font-bold"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Dirección Física</label>
+                      <input 
+                        type="text"
+                        placeholder="Ej: M0.0"
+                        value={initTagAddress}
+                        onChange={(e) => setInitTagAddress(e.target.value)}
+                        className="w-full bg-[#F2EADA] border-[2px] border-[#A3855B]/50 px-3 py-1.5 text-sm text-[#312011] placeholder-[#A3855B]/60 focus:outline-none focus:border-[#69523C] transition-all font-bold"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
