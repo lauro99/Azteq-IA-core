@@ -291,31 +291,21 @@ function PlcDashboardContent() {
         };
         fetchInitial();
 
-        // Suscribirse a los web sockets de Supabase
-        channel = supabase.channel(`realtime_${plcTargetId}`)
-          .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'plc_realtime', 
-            filter: `plc_id=eq.${plcTargetId}` 
-          }, (payload) => {
-            const newData = payload.new as any;
-            if (newData) {
-              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
+        // 🔄 Polling a la BD de Supabase cada 2 segundos en lugar de WebSockets dependientes
+        interval = setInterval(async () => {
+          if (isFetching) return;
+          isFetching = true;
+          try {
+            const { data } = await supabase.from('plc_realtime').select('*').eq('plc_id', plcTargetId).single();
+            if (data) {
+              setPlcData({ ...data.data, estatusGeneral: data.estatusgeneral });
             }
-          })
-          .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'plc_realtime', 
-            filter: `plc_id=eq.${plcTargetId}` 
-          }, (payload) => {
-            const newData = payload.new as any;
-            if (newData) {
-              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
-            }
-          })
-          .subscribe();
+          } catch (e) {
+            console.error('Error en polling de Supabase:', e);
+          } finally {
+            isFetching = false;
+          }
+        }, 2000);
 
       } else {
         // --- 🏭 MODO LOCAL ORIGINAL (Cable directo / Polling) ---
