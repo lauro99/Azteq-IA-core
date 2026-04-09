@@ -836,13 +836,22 @@ function PlcDashboardContent() {
                     value={plcModel}
                     onChange={(e) => setPlcModel(e.target.value)}
 
-                    className="w-full bg-transparent border-b-[2px] border-[#A3855B]/50 px-2 py-2 text-[#312011] focus:outline-none focus:border-[#69523C] transition-all font-sans font-bold appearance-none cursor-pointer"
+                    className="w-full bg-[#FCFAEA]/90 border-[2px] border-[#69523C] px-4 py-3 text-[#312011] focus:outline-none focus:border-[#A3855B] transition-all font-sans font-bold appearance-none cursor-pointer text-sm"
                   >
-                    {/* @ts-ignore */}
-                    {brandInfo.models?.map((m: string) => (
-                      <option key={m} value={m.toLowerCase()}>{m}</option>
-                    ))}
+                    {brandId === 'siemens' ? (
+                      <>
+                        <option value="s7-1200">Siemens S7-1200</option>
+                        <option value="s7-1500">Siemens S7-1500</option>
+                        <option value="s7-300">Siemens S7-300</option>
+                        <option value="logo">Siemens LOGO! 8</option>
+                      </>
+                    ) : (
+                      <option value="standard">{brandInfo.name} Estándar (Predeterminado)</option>
+                    )}
                   </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#69523C]">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
                 </div>
               </div>
 
