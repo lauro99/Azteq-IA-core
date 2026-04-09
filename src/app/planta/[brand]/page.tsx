@@ -167,6 +167,7 @@ function PlcDashboardContent() {
       if (data && (data as any).length > 0) {
         setSavedPLCs(prev => [...prev, (data as any)[0]]);
         setSelectedPlcId((data as any)[0].id);
+        setIoTags(initialTags);
       }
     } catch (err: any) {
       showToast("Error al guardar: " + err.message, "error");
