@@ -124,6 +124,10 @@ function PlcDashboardContent() {
       }
   };
 
+  // Inicial tag states for new PLC
+  const [initTagName, setInitTagName] = useState('Inicio_Ciclo');
+  const [initTagAddress, setInitTagAddress] = useState('M0.0');
+
   const handleSavePlc = async () => {
     if (!newPlcName || !ipAddress || !user) {
       showToast("Falta nombre o IP para guardar el PLC", "error");
@@ -132,6 +136,15 @@ function PlcDashboardContent() {
     
     setIsSaving(true);
     try {
+      const initialTags = [{ 
+        id: crypto.randomUUID(), 
+        group: 'General', 
+        name: initTagName || 'Variable_1', 
+        address: initTagAddress || 'M0.0', 
+        type: 'Bool', 
+        unit: '' 
+      }];
+
       const { data, error } = await supabase
         .from('plcs')
         .insert([{
@@ -142,7 +155,8 @@ function PlcDashboardContent() {
           port: parseInt(port) || 102,
           rack: parseInt(rack) || 0,
           slot: parseInt(slot) || 1,
-          is_cloud: connectionMode === 'cloud'
+          is_cloud: connectionMode === 'cloud',
+          io_config: initialTags
         }])
         .select();
 
@@ -153,6 +167,7 @@ function PlcDashboardContent() {
       if (data && (data as any).length > 0) {
         setSavedPLCs(prev => [...prev, (data as any)[0]]);
         setSelectedPlcId((data as any)[0].id);
+        setIoTags(initialTags);
       }
     } catch (err: any) {
       showToast("Error al guardar: " + err.message, "error");
@@ -276,31 +291,21 @@ function PlcDashboardContent() {
         };
         fetchInitial();
 
-        // Suscribirse a los web sockets de Supabase
-        channel = supabase.channel(`realtime_${plcTargetId}`)
-          .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'plc_realtime', 
-            filter: `plc_id=eq.${plcTargetId}` 
-          }, (payload) => {
-            const newData = payload.new as any;
-            if (newData) {
-              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
+        // 🔄 Polling a la BD de Supabase cada 2 segundos en lugar de WebSockets dependientes
+        interval = setInterval(async () => {
+          if (isFetching) return;
+          isFetching = true;
+          try {
+            const { data } = await supabase.from('plc_realtime').select('*').eq('plc_id', plcTargetId).single();
+            if (data) {
+              setPlcData({ ...data.data, estatusGeneral: data.estatusgeneral });
             }
-          })
-          .on('postgres_changes', { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'plc_realtime', 
-            filter: `plc_id=eq.${plcTargetId}` 
-          }, (payload) => {
-            const newData = payload.new as any;
-            if (newData) {
-              setPlcData({ ...newData.data, estatusGeneral: newData.estatusgeneral });
-            }
-          })
-          .subscribe();
+          } catch (e) {
+            console.error('Error en polling de Supabase:', e);
+          } finally {
+            isFetching = false;
+          }
+        }, 2000);
 
       } else {
         // --- 🏭 MODO LOCAL ORIGINAL (Cable directo / Polling) ---
@@ -344,6 +349,40 @@ function PlcDashboardContent() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags, selectedPlcId]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/plc/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brand: brandId,
+              ip: ipAddress,
+              port,
+              rack: Number(rack),
+              slot: Number(slot),
+              isCloud: connectionMode === 'cloud',
+              ioTags
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setPlcData(data.data);
+          } else {
+            console.error('Polling error:', data.error);
+          }
+        } catch (error) {
+          console.error('Polling network error:', error);
+        }
+      }, 2000); // 2 segundos (refresco en tiempo real)
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags]);
 
   if (loading) {
     return (
@@ -398,6 +437,13 @@ function PlcDashboardContent() {
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsConnecting(true);
+    
+    // Si es una nueva conexión en modo nube, forzamos a guadar primero para tener un ID válido
+    if (connectionMode === 'cloud' && !selectedPlcId) {
+      showToast('Por favor, guarda la conexión antes de enlazar en modo nube.', 'error');
+      setIsConnecting(false);
+      return;
+    }
     
     try {
       if (connectionMode === 'cloud') {
@@ -533,7 +579,7 @@ function PlcDashboardContent() {
                       placeholder="Dirección del PLC (ej. M0.0, 40001)"
                       title="Ejemplos: Si es Siemens pon M0.0 o DB1,X0. Si es AB pon Motor_Run. Si es Modbus pon 40001."
                       value={newTag.address}
-                      onChange={(e) => setNewTag({...newTag, address: e.target.value})}
+                      onChange={(e) => setNewTag({...newTag, address: e.target.value.toUpperCase()})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-mono font-bold uppercase"
                     />
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Revisa tu software (TIA Portal, Studio 5000, etc.) y escribe la dirección de memoria exacta o el Tag.">
@@ -828,6 +874,7 @@ function PlcDashboardContent() {
                   <select 
                     value={plcModel}
                     onChange={(e) => setPlcModel(e.target.value)}
+
                     className="w-full bg-[#FCFAEA]/90 border-[2px] border-[#69523C] px-4 py-3 text-[#312011] focus:outline-none focus:border-[#A3855B] transition-all font-sans font-bold appearance-none cursor-pointer text-sm"
                   >
                     {brandId === 'siemens' ? (
@@ -846,6 +893,57 @@ function PlcDashboardContent() {
                   </div>
                 </div>
               </div>
+
+              {/* Nombre y Guardado en el Panel Principal */}
+              {!selectedPlcId && (
+                <div className="w-full mb-4 relative z-10 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSaveName}</label>
+                    <div className="flex items-center gap-2 bg-[#F2EADA] border-[2px] border-[#A3855B]/50 p-1" style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}>
+                      <input 
+                        type="text"
+                        placeholder="Ej. Línea de Envasado 1"
+                        value={newPlcName}
+                        onChange={(e) => setNewPlcName(e.target.value)}
+                        className="bg-transparent text-sm text-[#312011] px-2 py-1 focus:outline-none flex-1 placeholder-[#A3855B]/60 font-bold"
+                      />
+                      <button 
+                        type="button"
+                        onClick={handleSavePlc}
+                        disabled={isSaving || !newPlcName.trim() || !ipAddress.trim()}
+                        className="bg-[#D4AF37] hover:bg-[#CBB596] disabled:bg-gray-400 disabled:text-gray-200 text-[#312011] text-[10px] uppercase font-bold px-4 py-2 transition-all tracking-widest flex items-center gap-2"
+                        style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 5px)' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                        {isSaving ? '...' : t.plSave}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">1er Tag Nominal</label>
+                      <input 
+                        type="text"
+                        placeholder="Nombre"
+                        value={initTagName}
+                        onChange={(e) => setInitTagName(e.target.value)}
+                        className="w-full bg-[#F2EADA] border-[2px] border-[#A3855B]/50 px-3 py-1.5 text-sm text-[#312011] placeholder-[#A3855B]/60 focus:outline-none focus:border-[#69523C] transition-all font-bold"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">Dirección Física</label>
+                      <input 
+                        type="text"
+                        placeholder="Ej: M0.0"
+                        value={initTagAddress}
+                        onChange={(e) => setInitTagAddress(e.target.value)}
+                        className="w-full bg-[#F2EADA] border-[2px] border-[#A3855B]/50 px-3 py-1.5 text-sm text-[#312011] placeholder-[#A3855B]/60 focus:outline-none focus:border-[#69523C] transition-all font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {connectionMode === 'cloud' && (
                 <div className="bg-[#D1C3AD] border-[2px] border-[#A3855B] p-3 flex items-start gap-3 relative z-10" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
@@ -996,19 +1094,22 @@ function PlcDashboardContent() {
                       {plcData?.estatusGeneral ?? 'No Conectado'}
                     </span>
                   </div>
-                  {ioTags.map((tag) => (
-                    <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                      <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
-                      <span className="text-3xl font-black text-white">
-                        {plcData?.[tag.name] !== undefined 
-                          ? (typeof plcData[tag.name] === 'boolean' 
-                              ? <span className={plcData[tag.name] ? "text-green-500" : "text-red-500"}>{plcData[tag.name] ? 'ON' : 'OFF'}</span> 
-                              : plcData[tag.name]) 
-                          : '--'}
-                        {tag.unit ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>)}
-                      </span>
-                    </div>
-                  ))}
+                  {ioTags.map((tag) => {
+                    const saneName = tag.name.replace(/\s+/g, '_');
+                    return (
+                      <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                        <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
+                        <span className="text-3xl font-black text-white">
+                          {plcData?.[saneName] !== undefined 
+                            ? (typeof plcData[saneName] === 'boolean' 
+                                ? <span className={plcData[saneName] ? "text-green-500" : "text-red-500"}>{plcData[saneName] ? 'ON' : 'OFF'}</span> 
+                                : plcData[saneName]) 
+                            : '--'}
+                          {tag.unit && plcData?.[saneName] !== undefined ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (!tag.unit && plcData?.[saneName] !== undefined && !tag.type.toLowerCase().includes('bool') && <span className="text-lg text-white/40"> ±</span>)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </>
               ) : (
                 <>
