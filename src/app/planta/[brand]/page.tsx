@@ -350,6 +350,41 @@ function PlcDashboardContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, ioTags, selectedPlcId]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isConnected) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/plc/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brand: brandId,
+              ip: ipAddress,
+              port,
+              rack: Number(rack),
+              slot: Number(slot),
+              isCloud: connectionMode === 'cloud',
+              mockMode,
+              ioTags
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setPlcData(data.data);
+          } else {
+            console.error('Polling error:', data.error);
+          }
+        } catch (error) {
+          console.error('Polling network error:', error);
+        }
+      }, 2000); // 2 segundos (refresco en tiempo real)
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isConnected, brandId, ipAddress, port, rack, slot, connectionMode, mockMode, ioTags]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#111] flex items-center justify-center">
@@ -545,7 +580,7 @@ function PlcDashboardContent() {
                       placeholder="Dirección del PLC (ej. M0.0, 40001)"
                       title="Ejemplos: Si es Siemens pon M0.0 o DB1,X0. Si es AB pon Motor_Run. Si es Modbus pon 40001."
                       value={newTag.address}
-                      onChange={(e) => setNewTag({...newTag, address: e.target.value})}
+                      onChange={(e) => setNewTag({...newTag, address: e.target.value.toUpperCase()})}
                       className="w-full bg-[#1A253A] border-[2px] border-[#A3855B]/80 pl-8 pr-3 py-2 text-[#FCFAEA] placeholder-[#A3855B]/50 focus:outline-none focus:border-[#E8C673] text-sm font-mono font-bold uppercase"
                     />
                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3855B] hover:text-[#E8C673] cursor-help" title="Revisa tu software (TIA Portal, Studio 5000, etc.) y escribe la dirección de memoria exacta o el Tag.">
