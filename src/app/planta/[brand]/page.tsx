@@ -199,6 +199,7 @@ function PlcDashboardContent() {
               setRack(config.rack?.toString() || '0');
               setSlot(config.slot?.toString() || '1');
               setConnectionMode(config.is_cloud ? 'cloud' : 'local');
+              setConnectionMode(config.is_cloud ? 'cloud' : 'local');
               setNewPlcName(config.name);
               setIoTags(config.io_config || []);
               
