@@ -838,7 +838,8 @@ function PlcDashboardContent() {
 
                     className="w-full bg-transparent border-b-[2px] border-[#A3855B]/50 px-2 py-2 text-[#312011] focus:outline-none focus:border-[#69523C] transition-all font-sans font-bold appearance-none cursor-pointer"
                   >
-                    {brandInfo.models.map(m => (
+                    {/* @ts-ignore */}
+                    {brandInfo.models?.map((m: string) => (
                       <option key={m} value={m.toLowerCase()}>{m}</option>
                     ))}
                   </select>
@@ -862,7 +863,7 @@ function PlcDashboardContent() {
                       onClick={handleSavePlc}
                       disabled={isSaving || !newPlcName.trim() || !ipAddress.trim()}
                       className="bg-[#D4AF37] hover:bg-[#CBB596] disabled:bg-gray-400 disabled:text-gray-200 text-[#312011] text-[10px] uppercase font-bold px-4 py-2 transition-all tracking-widest flex items-center gap-2"
-                      style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
+                      style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 5px)' }}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                       {isSaving ? '...' : t.plSave}
@@ -870,24 +871,6 @@ function PlcDashboardContent() {
                   </div>
                 </div>
               )}
-                    className="w-full bg-[#FCFAEA]/90 border-[2px] border-[#69523C] px-4 py-3 text-[#312011] focus:outline-none focus:border-[#A3855B] transition-all font-sans font-bold appearance-none cursor-pointer text-sm"
-                  >
-                    {brandId === 'siemens' ? (
-                      <>
-                        <option value="s7-1200">Siemens S7-1200</option>
-                        <option value="s7-1500">Siemens S7-1500</option>
-                        <option value="s7-300">Siemens S7-300</option>
-                        <option value="logo">Siemens LOGO! 8</option>
-                      </>
-                    ) : (
-                      <option value="standard">{brandInfo.name} Estándar (Predeterminado)</option>
-                    )}
-                  </select>
-                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#69523C]">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  </div>
-                </div>
-              </div>
 
               {connectionMode === 'cloud' && (
                 <div className="bg-[#D1C3AD] border-[2px] border-[#A3855B] p-3 flex items-start gap-3 relative z-10" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
