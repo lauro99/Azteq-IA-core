@@ -399,6 +399,13 @@ function PlcDashboardContent() {
     e.preventDefault();
     setIsConnecting(true);
     
+    // Si es una nueva conexión en modo nube, forzamos a guadar primero para tener un ID válido
+    if (connectionMode === 'cloud' && !selectedPlcId) {
+      showToast('Por favor, guarda la conexión antes de enlazar en modo nube.', 'error');
+      setIsConnecting(false);
+      return;
+    }
+    
     try {
       if (connectionMode === 'cloud') {
         const plcTargetId = selectedPlcId || 'bb34bcc6-9cd7-47f6-935e-eae22cba04e1'; // Fallback a tu id de .env.local
@@ -828,6 +835,41 @@ function PlcDashboardContent() {
                   <select 
                     value={plcModel}
                     onChange={(e) => setPlcModel(e.target.value)}
+
+                    className="w-full bg-transparent border-b-[2px] border-[#A3855B]/50 px-2 py-2 text-[#312011] focus:outline-none focus:border-[#69523C] transition-all font-sans font-bold appearance-none cursor-pointer"
+                  >
+                    {brandInfo.models.map(m => (
+                      <option key={m} value={m.toLowerCase()}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Nombre y Guardado en el Panel Principal */}
+              {!selectedPlcId && (
+                <div className="w-full mb-4 relative z-10 flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-[#69523C] uppercase tracking-widest px-1 font-sans">{t.plSaveName}</label>
+                  <div className="flex items-center gap-2 bg-[#F2EADA] border-[2px] border-[#A3855B]/50 p-1" style={{ clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)' }}>
+                    <input 
+                      type="text"
+                      placeholder="Ej. Línea de Envasado 1"
+                      value={newPlcName}
+                      onChange={(e) => setNewPlcName(e.target.value)}
+                      className="bg-transparent text-sm text-[#312011] px-2 py-1 focus:outline-none flex-1 placeholder-[#A3855B]/60 font-bold"
+                    />
+                    <button 
+                      type="button"
+                      onClick={handleSavePlc}
+                      disabled={isSaving || !newPlcName.trim() || !ipAddress.trim()}
+                      className="bg-[#D4AF37] hover:bg-[#CBB596] disabled:bg-gray-400 disabled:text-gray-200 text-[#312011] text-[10px] uppercase font-bold px-4 py-2 transition-all tracking-widest flex items-center gap-2"
+                      style={{ clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)' }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                      {isSaving ? '...' : t.plSave}
+                    </button>
+                  </div>
+                </div>
+              )}
                     className="w-full bg-[#FCFAEA]/90 border-[2px] border-[#69523C] px-4 py-3 text-[#312011] focus:outline-none focus:border-[#A3855B] transition-all font-sans font-bold appearance-none cursor-pointer text-sm"
                   >
                     {brandId === 'siemens' ? (
