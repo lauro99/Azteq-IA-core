@@ -206,28 +206,41 @@ function PlcDashboardContent() {
               // Iniciar conexión automática
               setIsConnecting(true);
               try {
-                const res = await fetch('/api/plc/connect', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    brand: brandId,
-                    ip: config.ip,
-                    port: config.port?.toString() || '102',
-                    rack: Number(config.rack) || 0,
-                    slot: Number(brandId === 'siemens' ? '0' : (config.slot || '1')),
-                    isCloud: config.is_cloud,
-                    
-                    connectOnly: !(config.io_config && config.io_config.length > 0),
-                    ioTags: config.io_config || []
-                  })
-                });
-                const data = await res.json();
-                if (data.success) {
-                  setPlcData(data.data);
-                  setPlcWarning(data.warning || null);
-                  setIsConnected(true);
+                if (config.is_cloud) {
+                  // MODO NUBE: Leer directamente de Supabase en lugar de intentar conectar por IP local
+                  const { data, error } = await supabase.from('plc_realtime').select('*').eq('plc_id', config.id).single();
+                  
+                  if (error || !data) {
+                    showToast('No se encontraron métricas en vivo en la nube.', 'error');
+                  } else {
+                    setPlcData({ ...data.data, estatusGeneral: data.estatusgeneral });
+                    setPlcWarning(null);
+                    setIsConnected(true);
+                  }
                 } else {
-                  showToast(data.error || 'Error conectando al PLC', 'error');
+                  // MODO LOCAL
+                  const res = await fetch('/api/plc/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      brand: brandId,
+                      ip: config.ip,
+                      port: config.port?.toString() || '102',
+                      rack: Number(config.rack) || 0,
+                      slot: Number(brandId === 'siemens' ? '0' : (config.slot || '1')),
+                      isCloud: config.is_cloud,
+                      connectOnly: !(config.io_config && config.io_config.length > 0),
+                      ioTags: config.io_config || []
+                    })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setPlcData(data.data);
+                    setPlcWarning(data.warning || null);
+                    setIsConnected(true);
+                  } else {
+                    showToast(data.error || 'Error conectando al PLC', 'error');
+                  }
                 }
               } catch (error) {
                 showToast('Error de red contactando al servidor', 'error');
