@@ -1060,19 +1060,22 @@ function PlcDashboardContent() {
                       {plcData?.estatusGeneral ?? 'No Conectado'}
                     </span>
                   </div>
-                  {ioTags.map((tag) => (
-                    <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
-                      <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
-                      <span className="text-3xl font-black text-white">
-                        {plcData?.[tag.name] !== undefined 
-                          ? (typeof plcData[tag.name] === 'boolean' 
-                              ? <span className={plcData[tag.name] ? "text-green-500" : "text-red-500"}>{plcData[tag.name] ? 'ON' : 'OFF'}</span> 
-                              : plcData[tag.name]) 
-                          : '--'}
-                        {tag.unit ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (tag.type.toLowerCase().includes('real') && <span className="text-lg text-white/40"> ±</span>)}
-                      </span>
-                    </div>
-                  ))}
+                  {ioTags.map((tag) => {
+                    const saneName = tag.name.replace(/\s+/g, '_');
+                    return (
+                      <div key={tag.id || tag.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors">
+                        <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-2">{tag.group ? `${tag.group} - ` : ''}{tag.name}</span>
+                        <span className="text-3xl font-black text-white">
+                          {plcData?.[saneName] !== undefined 
+                            ? (typeof plcData[saneName] === 'boolean' 
+                                ? <span className={plcData[saneName] ? "text-green-500" : "text-red-500"}>{plcData[saneName] ? 'ON' : 'OFF'}</span> 
+                                : plcData[saneName]) 
+                            : '--'}
+                          {tag.unit && plcData?.[saneName] !== undefined ? <span className="text-lg text-white/40 ml-1">{tag.unit}</span> : (!tag.unit && plcData?.[saneName] !== undefined && !tag.type.toLowerCase().includes('bool') && <span className="text-lg text-white/40"> ±</span>)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </>
               ) : (
                 <>
